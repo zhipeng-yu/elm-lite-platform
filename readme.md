@@ -11,14 +11,35 @@
 
 四份 2021 年 PDF 仅用于参考页面、业务流程和表结构。除非老师明确要求，默认只开发一套最终的前后端分离项目。
 
-## 暂定技术栈
+## 技术栈
 
-- 后端：Spring Boot、MyBatis/MyBatis-Plus、JUnit 5、MockMvc
+- 后端：JDK 21、Spring Boot 3.5.16、Maven 3.9.16、MyBatis-Plus 3.5.17
 - 前端：Vue 3、Vue Router、Axios、Element Plus
 - 数据库：MySQL
+- 测试：JUnit 5、Spring Boot Test、MockMvc、H2、JaCoCo 0.8.15
 - 接口：REST 风格，统一 `/api/v1` 前缀和 `code/msg/data` 响应结构
 
-具体版本在创建脚手架前由三人共同确认，未经讨论不要更换框架或增加依赖。
+后端 D1 依赖基线已经确认。前端和数据库工具的具体版本仍由对应负责人确认，未经讨论不要更换框架或增加依赖。
+
+## 后端开发
+
+后端代码位于 `backend/`，根包名为 `com.elmlite.platform`。Windows PowerShell 中执行：
+
+```powershell
+Set-Location .\backend
+.\mvnw.cmd test
+.\mvnw.cmd verify
+```
+
+`verify` 会运行测试并在 `backend/target/site/jacoco/index.html` 生成覆盖率报告。测试使用 H2 的 MySQL 兼容模式，不依赖本地 MySQL。
+
+启动应用前需要先完成 V1 数据库迁移，并在当前终端提供本机数据库凭据：
+
+```powershell
+$env:DB_USERNAME = '<本机 MySQL 用户名>'
+$env:DB_PASSWORD = '<本机 MySQL 密码>'
+.\mvnw.cmd spring-boot:run
+```
 
 ## 基础功能
 
@@ -36,7 +57,7 @@
 - 仓库和 `main` 已建立，三名成员已加入；龙、梁尚未完成首次克隆。
 - 已确认余负责 A、龙负责 B、梁负责 C；每天 09:00 统一合并昨天完成的 PR。
 - JDBC、Servlet 不作为独立阶段成果提交。
-- 应用代码尚未搭建；具体版本、目录、接口和鉴权方案在项目启动后确认。
+- D1 后端脚手架已建立；第一周接口清单和鉴权方案仍待小组确认。
 
 组员首次参与请先完整阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，再克隆仓库和创建功能分支。
 

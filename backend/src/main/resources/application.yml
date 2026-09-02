@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: elm-lite-platform
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/elm_lite?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+server:
+  port: ${SERVER_PORT:8080}
