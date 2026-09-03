@@ -85,7 +85,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @RestController
-    static class TestController {
+    public static class TestController {
 
         @GetMapping("/api/v1/test/success")
         ApiResponse<Map<String, String>> success() {
