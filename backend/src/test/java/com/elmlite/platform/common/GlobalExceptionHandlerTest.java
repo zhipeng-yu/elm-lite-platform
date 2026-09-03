@@ -94,7 +94,7 @@ class GlobalExceptionHandlerTest {
 
         @PostMapping("/api/v1/test/validate")
         ApiResponse<Void> validate(@Valid @RequestBody SampleRequest request) {
-            return ApiResponse.success();
+            return ApiResponse.success(null);
         }
 
         @GetMapping("/api/v1/test/business-error")
