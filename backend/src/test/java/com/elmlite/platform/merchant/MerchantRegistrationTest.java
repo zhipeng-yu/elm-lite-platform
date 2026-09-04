@@ -85,4 +85,23 @@ class MerchantRegistrationTest {
 
         org.mockito.Mockito.verifyNoInteractions(merchantService);
     }
+    @Test
+    void shouldRejectBlankPassword() throws Exception {
+        mockMvc.perform(post("/api/v1/merchants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "account": "new_merchant",
+                                  "password": "   ",
+                                  "merchantName": "校园美食店",
+                                  "contactName": "测试联系人",
+                                  "contactPhone": "19900000003"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.data.fieldErrors.password").exists());
+
+        org.mockito.Mockito.verifyNoInteractions(merchantService);
+    }
 }
