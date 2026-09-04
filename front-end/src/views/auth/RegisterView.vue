@@ -2,7 +2,7 @@
   <div class="auth-page">
     <el-card class="auth-card">
       <template #header>
-        <h2>登录</h2>
+        <h2>注册</h2>
       </template>
       <el-form
         ref="formRef"
@@ -12,16 +12,18 @@
         @submit.prevent="handleSubmit"
       >
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" placeholder="用户名" />
+          <el-input v-model="form.username" placeholder="2-20 个字符" />
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input
             v-model="form.password"
             type="password"
             show-password
-            placeholder="密码"
-            @keyup.enter="handleSubmit"
+            placeholder="长度至少为 8 位"
           />
+        </el-form-item>
+        <el-form-item label="昵称" prop="displayName">
+          <el-input v-model="form.displayName" placeholder="1-20 个字符" />
         </el-form-item>
         <el-alert
           v-if="errorMsg"
@@ -33,12 +35,11 @@
         />
         <el-form-item>
           <el-button type="primary" :loading="submitting" @click="handleSubmit">
-            登录
+            注册
           </el-button>
-          <el-button @click="router.push('/register')">去注册</el-button>
+          <el-button @click="router.push('/login')">已有账号，去登录</el-button>
         </el-form-item>
       </el-form>
-      <p class="tip">开发期模拟账号：demo / 12345678（后端就绪后失效）</p>
     </el-card>
   </div>
 </template>
@@ -48,8 +49,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
-import { login } from '@/api/user'
-import { setToken } from '@/utils/auth'
+import { registerUser } from '@/api/user'
 
 const router = useRouter()
 const formRef = ref()
@@ -58,12 +58,23 @@ const errorMsg = ref('')
 
 const form = reactive({
   username: '',
-  password: ''
+  password: '',
+  displayName: ''
 })
 
 const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 2, max: 20, message: '用户名长度为 2-20 个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 8, message: '长度至少为 8 位', trigger: 'blur' }
+  ],
+  displayName: [
+    { required: true, message: '请输入昵称', trigger: 'blur' },
+    { max: 20, message: '昵称最长 20 个字符', trigger: 'blur' }
+  ]
 }
 
 async function handleSubmit() {
@@ -74,14 +85,16 @@ async function handleSubmit() {
   }
   submitting.value = true
   try {
-    const data = await login({ username: form.username, password: form.password })
-    setToken(data.accessToken)
-    ElMessage.success('登录成功')
-    const redirect = router.currentRoute.value.query.redirect
-    router.push(typeof redirect === 'string' ? redirect : '/home')
+    await registerUser({
+      username: form.username,
+      password: form.password,
+      displayName: form.displayName
+    })
+    ElMessage.success('注册成功，请登录')
+    router.push('/login')
   } catch (error) {
-    // 401 时拦截器统一提示“账号或密码错误”，这里保留页面内错误状态
-    errorMsg.value = error.response?.data?.msg || '登录失败，请稍后重试'
+    // 用户名重复等业务错误由拦截器统一提示，这里保留页面内错误状态
+    errorMsg.value = error.response?.data?.msg || '注册失败，请稍后重试'
   } finally {
     submitting.value = false
   }
@@ -103,10 +116,5 @@ async function handleSubmit() {
 
 .error {
   margin-bottom: 16px;
-}
-
-.tip {
-  color: #909399;
-  font-size: 12px;
 }
 </style>
