@@ -127,4 +127,29 @@ class MerchantRegistrationTest {
 
         org.mockito.Mockito.verifyNoInteractions(merchantService);
     }
+    @Test
+    void shouldReturnConflictForDuplicateAccount() throws Exception {
+        when(merchantService.register(
+                "new_merchant", "test_password_123",
+                "校园美食店", "测试联系人", "19900000003"))
+                .thenThrow(new com.elmlite.platform.exception.BusinessException(
+                        org.springframework.http.HttpStatus.CONFLICT,
+                        "商家账号已存在"));
+
+        mockMvc.perform(post("/api/v1/merchants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "account": "new_merchant",
+                                  "password": "test_password_123",
+                                  "merchantName": "校园美食店",
+                                  "contactName": "测试联系人",
+                                  "contactPhone": "19900000003"
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409))
+                .andExpect(jsonPath("$.msg").value("商家账号已存在"))
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
 }
