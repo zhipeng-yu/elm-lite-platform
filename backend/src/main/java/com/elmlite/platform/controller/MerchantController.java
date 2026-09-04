@@ -46,8 +46,11 @@ public class MerchantController {
             String account,
             @NotBlank(message = "密码不能为空")
             String password,
+            @NotBlank(message = "商家名称不能为空")
             String merchantName,
+            @NotBlank(message = "联系人不能为空")
             String contactName,
+            @NotBlank(message = "联系电话不能为空")
             String contactPhone
     ) {
         @Override
