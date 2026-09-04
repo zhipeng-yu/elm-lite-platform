@@ -9,6 +9,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -101,6 +104,26 @@ class MerchantRegistrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.data.fieldErrors.password").exists());
+
+        org.mockito.Mockito.verifyNoInteractions(merchantService);
+    }
+    @ParameterizedTest
+    @ValueSource(strings = {"merchantName", "contactName", "contactPhone"})
+    void shouldRejectBlankMerchantDetails(String field) throws Exception {
+        var body = new ObjectMapper().createObjectNode();
+        body.put("account", "new_merchant");
+        body.put("password", "test_password_123");
+        body.put("merchantName", "校园美食店");
+        body.put("contactName", "测试联系人");
+        body.put("contactPhone", "19900000003");
+        body.put(field, "   ");
+
+        mockMvc.perform(post("/api/v1/merchants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.data.fieldErrors." + field).exists());
 
         org.mockito.Mockito.verifyNoInteractions(merchantService);
     }
