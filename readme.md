@@ -36,7 +36,7 @@ Set-Location .\backend
 
 `verify` 会运行测试并在 `backend/target/site/jacoco/index.html` 生成覆盖率报告。测试使用 H2 的 MySQL 兼容模式，不依赖本地 MySQL。
 
-启动应用前需要先完成 V1 数据库迁移，并在当前终端提供本机数据库凭据：
+启动应用前需要依次执行 `database/migration/` 中的 V1、V2 迁移，再导入 `database/init/V1__seed_data.sql`，并在当前终端提供本机数据库凭据：
 
 ```powershell
 $env:DB_USERNAME = '<本机 MySQL 用户名>'

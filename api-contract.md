@@ -121,7 +121,49 @@ PATCH /api/v1/users/me
 
 两个接口都必须登录。`PATCH` 当前只更新 `displayName`，不允许通过此接口修改用户名或密码。
 
-## 3. 登录鉴权方案
+## 3. 公开店铺接口
+
+### 3.1 店铺列表
+
+```http
+GET /api/v1/shops
+```
+
+无需登录。成功时返回 HTTP `200`：
+
+```json
+{
+  "code": 0,
+  "msg": "success",
+  "data": [
+    {
+      "id": 1,
+      "shopName": "校园美食店",
+      "description": "用于本地开发和测试的演示店铺",
+      "imageUrl": null,
+      "startPriceCent": 1500,
+      "deliveryPriceCent": 300,
+      "businessStatus": 1
+    }
+  ]
+}
+```
+
+### 3.2 店铺详情
+
+```http
+GET /api/v1/shops/{id}
+```
+
+无需登录。返回字段与列表项一致，并增加 `address`；店铺不存在时返回 HTTP `404`。
+
+`businessStatus` 与数据库一致：`0` 表示休息，`1` 表示营业，`2` 表示临时闭店。接口金额继续使用整数分，Service 负责与数据库 `DECIMAL` 元金额转换，Entity 不直接作为响应返回。D3 基础范围直接返回数组，暂不增加分页。
+
+### 3.3 尚待确认的商家管理接口
+
+商家注册、开店和营业状态修改涉及独立商家账号的鉴权方式，现有用户 JWT 契约不能直接复用。相关路径和鉴权方式由老师或小组确认后再冻结；确认前不得用客户端传入的 `merchantId` 代替身份校验。
+
+## 4. 登录鉴权方案
 
 - 使用单个 JWT Access Token，不使用 Refresh Token。
 - Token 通过 `Authorization: Bearer <accessToken>` 请求头发送。
@@ -135,11 +177,11 @@ PATCH /api/v1/users/me
 - 注册和登录是公开接口；`/users/me`、地址、购物车和订单接口必须登录。
 - 服务层根据 JWT 中的当前用户 ID 校验资源归属；登录但操作他人资源时返回 HTTP `403`。
 
-## 4. 明确不做
+## 5. 明确不做
 
 当前基础范围不实现 Refresh Token、多设备会话、验证码、第三方登录、管理员权限和 Token 黑名单。需求明确增加时再单独讨论。
 
-## 5. 分工与 TDD 验收
+## 6. 分工与 TDD 验收
 
 - 余（A）：统一响应、异常处理、Spring Security/JWT、注册登录和鉴权测试及实现。
 - 梁（B）：确认用户和认证所需数据库字段，并负责版本化数据库迁移。

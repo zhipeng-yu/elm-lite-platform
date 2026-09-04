@@ -7,9 +7,10 @@ SET NAMES utf8mb4;
 START TRANSACTION;
 
 INSERT IGNORE INTO users (
-    id, phone, password_hash, nickname, gender, status
+    id, username, phone, password_hash, nickname, gender, status
 ) VALUES (
     1,
+    'demo_user',
     '19900000001',
     '$2b$12$TBLttgwuUA/9F6Buygfk/.J1c//g6iAkkgC08U4NAlebwvT3J2tYO',
     '演示用户',

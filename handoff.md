@@ -1,6 +1,6 @@
 # 成员每日任务与完成情况
 
-最后更新：2026-09-03
+最后更新：2026-09-04
 
 本文件只维护每日任务进度、当前阻塞和 AI 使用记录；长期分工与协作规则见 `CONTRIBUTING.md`，已确认的接口方案见 `api-contract.md`。
 
@@ -11,7 +11,7 @@
 | 开发日 | 余（A） | 梁（B） | 龙（C） |
 | --- | --- | --- | --- |
 | D1<br>日期：2026-09-02 | ✅ 已完成：Issue [#2](https://github.com/zhipeng-yu/elm-lite-platform/issues/2)，建立 Spring Boot 后端脚手架、分层目录、测试基础配置和依赖基线；PR [#6](https://github.com/zhipeng-yu/elm-lite-platform/pull/6) 已合并 | ✅ 已完成：设计 ER 图，建立 V1 数据库迁移、初始化 SQL 和字段说明；PR [#5](https://github.com/zhipeng-yu/elm-lite-platform/pull/5) 已合并 | ✅ 已完成：Issue [#10](https://github.com/zhipeng-yu/elm-lite-platform/issues/10)，建立 Vue 3 前端脚手架、Router 和页面目录；PR [#11](https://github.com/zhipeng-yu/elm-lite-platform/pull/11) 已合并 |
-| D2<br>日期：2026-09-03 | ✅ 开发完成：Issue [#12](https://github.com/zhipeng-yu/elm-lite-platform/issues/12)，按红—绿—重构流程实现统一响应和异常处理；`verify` 6/6 通过；PR [#13](https://github.com/zhipeng-yu/elm-lite-platform/pull/13) 待余人工复核与合并 | ⬜ 待开始：基于 D1 的 V1 迁移建立 Entity、Mapper 和可重复测试数据，字段与冻结契约对齐 | ⬜ 待开始：基于 D1 前端脚手架封装 Axios、认证头、统一错误处理和基础布局，使用模拟数据验证加载、空数据和错误状态 |
+| D2<br>日期：2026-09-03 | ✅ 已完成：Issue [#12](https://github.com/zhipeng-yu/elm-lite-platform/issues/12)，按红—绿—重构流程实现统一响应和异常处理；`verify` 6/6 通过；PR [#13](https://github.com/zhipeng-yu/elm-lite-platform/pull/13) 已合并 | ✅ 已完成：建立 Entity、Mapper、V2 数据库迁移和可重复的 H2 测试数据；PR [#15](https://github.com/zhipeng-yu/elm-lite-platform/pull/15) 已合并 | ✅ 已完成：封装 Axios、认证头和统一错误处理，完成基础布局及加载、空数据、错误状态模拟页面；PR [#17](https://github.com/zhipeng-yu/elm-lite-platform/pull/17) 已合并 |
 | D3<br>日期：待填写 | ⬜ 待完成：按红—绿流程完成用户注册、登录、鉴权和个人信息 | ⬜ 待完成：按红—绿流程完成商家注册及店铺开店、关店、临时闭店 | ⬜ 待完成：完成注册、登录、店铺列表和店铺详情页面，按冻结契约使用模拟数据 |
 | D4<br>日期：待填写 | ⬜ 待完成：按红—绿流程完成收货地址增删改查，覆盖权限、参数和边界场景 | ⬜ 待完成：按红—绿流程完成分类、商品列表、详情、价格和库存 | ⬜ 待完成：完成分类、商品列表、商品详情和地址页面，并联调已合并接口 |
 | D5<br>日期：待填写 | ⬜ 待完成：按红—绿流程完成订单创建、列表和状态查询，回归 A 板块 | ⬜ 待完成：按红—绿流程完成购物车增删改查和下单所需库存校验，回归 B 板块 | ⬜ 待完成：完成购物车、下单和订单列表页面，跑通注册至订单查询的第一轮全流程 |
@@ -21,15 +21,9 @@
 
 未完成任务顺延。D6 按老师公布的需求变更替换具体内容；D7 后原则上冻结接口和数据库结构。
 
-## D2 开始前检查
-
-- 后端执行 `.\mvnw.cmd verify` 成功，当前 1 个上下文启动测试通过。
-- A、B 开始 Entity 和接口实现前需统一 `username/displayName` 与 `phone/nickname` 的映射，并明确整数分接口与 `DECIMAL` 数据库金额的转换方式。
-- B 建立 Mapper 测试时需补充 H2 可执行的测试结构；当前测试配置不加载 V1 SQL，V1 SQL 中的 `DECIMAL ... UNSIGNED` 也不能直接由 H2 执行。
-
 ## 当前阻塞
 
-- 暂无。
+- 商家注册、开店和营业状态修改的鉴权方式尚待老师或小组确认；公开店铺列表和详情接口不受影响。
 
 ## AI 使用记录
 
@@ -48,3 +42,5 @@
 | 2026-09-02 | 区分长期说明与短期进度，删除重复状态并修正成员职责和测试说明 | `readme.md`、`CONTRIBUTING.md`、`AGENTS.md`、`api-contract.md`、`handoff.md` | 待余复核 |
 | 2026-09-03 | 检查 D1 合并后的 Git、后端构建、测试配置、数据库结构与接口契约，并更新 D1/D2 状态 | `handoff.md` | 余 |
 | 2026-09-03 | 辅助按红—绿—重构流程实现 D2 统一响应、异常处理及 MockMvc 测试 | `backend/src/main/java/com/elmlite/platform/common/ApiResponse.java`、`backend/src/main/java/com/elmlite/platform/exception/`、`backend/src/test/java/com/elmlite/platform/common/GlobalExceptionHandlerTest.java`、`handoff.md` | 待余复核 |
+| 2026-09-04 | 根据已合并 PR 更新 D2 三人任务完成状态 | `handoff.md` | 待余复核 |
+| 2026-09-04 | 修复演示数据与 V2 用户字段不一致，并补充 D3 公开店铺接口契约 | `database/init/V1__seed_data.sql`、`readme.md`、`api-contract.md`、`handoff.md` | 待余复核 |
