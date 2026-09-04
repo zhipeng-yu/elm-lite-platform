@@ -60,7 +60,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/merchants",
                                 "/api/v1/merchant/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/merchants").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/shops/**").permitAll()
                         .requestMatchers("/api/v1/users/me").hasAuthority("USER")
                         .anyRequest().authenticated())
