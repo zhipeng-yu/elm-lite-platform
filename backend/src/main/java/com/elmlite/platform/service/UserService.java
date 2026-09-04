@@ -35,4 +35,23 @@ public class UserService {
         }
         return user;
     }
+
+    public User getCurrent(long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "用户不存在");
+        }
+        if (!Integer.valueOf(1).equals(user.getStatus())) {
+            throw new BusinessException(HttpStatus.FORBIDDEN, "账号已禁用");
+        }
+        return user;
+    }
+
+    @Transactional
+    public User updateDisplayName(long userId, String displayName) {
+        User user = getCurrent(userId);
+        user.setNickname(displayName);
+        userMapper.updateById(user);
+        return user;
+    }
 }

@@ -8,6 +8,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,6 +34,19 @@ public class UserController {
                 .body(ApiResponse.success(UserResponse.from(user)));
     }
 
+    @GetMapping("/me")
+    ApiResponse<UserResponse> getCurrent(@AuthenticationPrincipal Jwt jwt) {
+        return ApiResponse.success(UserResponse.from(userService.getCurrent(Long.parseLong(jwt.getSubject()))));
+    }
+
+    @PatchMapping("/me")
+    ApiResponse<UserResponse> updateCurrent(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody UpdateProfileRequest request) {
+        User user = userService.updateDisplayName(Long.parseLong(jwt.getSubject()), request.displayName());
+        return ApiResponse.success(UserResponse.from(user));
+    }
+
     public record RegistrationRequest(
             @NotBlank(message = "用户名不能为空")
             @Size(max = 50, message = "用户名长度不能超过50位")
@@ -39,6 +56,12 @@ public class UserController {
             @Size(min = 8, max = 72, message = "密码长度必须为8至72位")
             String password,
 
+            @NotBlank(message = "昵称不能为空")
+            @Size(max = 50, message = "昵称长度不能超过50位")
+            String displayName) {
+    }
+
+    public record UpdateProfileRequest(
             @NotBlank(message = "昵称不能为空")
             @Size(max = 50, message = "昵称长度不能超过50位")
             String displayName) {
