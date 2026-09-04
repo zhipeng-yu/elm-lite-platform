@@ -217,7 +217,7 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
       return ok(config, shop)
     }
 
-    return realAdapter(config)
+    return axios.getAdapter(realAdapter)(config)
   }
 }
 

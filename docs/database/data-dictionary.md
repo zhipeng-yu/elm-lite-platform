@@ -16,7 +16,8 @@
 | 字段            | 类型           | 约束       | 说明        |
 | ------------- | ------------ | -------- | --------- |
 | id            | BIGINT       | PK、AI、NN | 用户编号      |
-| phone         | VARCHAR(20)  | UQ、NN    | 登录手机号     |
+| username      | VARCHAR(50)  | UQ、NN    | 登录用户名（V2 新增） |
+| phone         | VARCHAR(20)  | UQ、可空  | 手机号（V2 调整为可空） |
 | password_hash | VARCHAR(100) | NN       | 加密后的密码    |
 | nickname      | VARCHAR(50)  | NN       | 用户昵称      |
 | gender        | TINYINT      | NN、默认0   | 0未知，1男，2女 |

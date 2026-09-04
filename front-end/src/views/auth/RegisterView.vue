@@ -12,18 +12,18 @@
         @submit.prevent="handleSubmit"
       >
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" placeholder="2-20 个字符" />
+          <el-input v-model="form.username" placeholder="1-50 个字符" />
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input
             v-model="form.password"
             type="password"
             show-password
-            placeholder="长度至少为 8 位"
+            placeholder="长度为 8-72 位"
           />
         </el-form-item>
         <el-form-item label="昵称" prop="displayName">
-          <el-input v-model="form.displayName" placeholder="1-20 个字符" />
+          <el-input v-model="form.displayName" placeholder="1-50 个字符" />
         </el-form-item>
         <el-alert
           v-if="errorMsg"
@@ -65,15 +65,15 @@ const form = reactive({
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 2, max: 20, message: '用户名长度为 2-20 个字符', trigger: 'blur' }
+    { min: 1, max: 50, message: '用户名长度为 1-50 个字符', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 8, message: '长度至少为 8 位', trigger: 'blur' }
+    { min: 8, max: 72, message: '长度为 8-72 位', trigger: 'blur' }
   ],
   displayName: [
     { required: true, message: '请输入昵称', trigger: 'blur' },
-    { max: 20, message: '昵称最长 20 个字符', trigger: 'blur' }
+    { max: 50, message: '昵称最长 50 个字符', trigger: 'blur' }
   ]
 }
 
