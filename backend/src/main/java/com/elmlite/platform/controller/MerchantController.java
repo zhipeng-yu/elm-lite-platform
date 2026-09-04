@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 
 @RestController
 @RequestMapping("/api/v1/merchants")
@@ -23,7 +25,7 @@ public class MerchantController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<MerchantResponse> register(
-            @RequestBody MerchantRegisterRequest request) {
+            @Valid @RequestBody MerchantRegisterRequest request) {
         Merchant merchant = merchantService.register(
                 request.account(),
                 request.password(),
@@ -40,6 +42,7 @@ public class MerchantController {
     }
 
     public record MerchantRegisterRequest(
+            @NotBlank(message = "商家账号不能为空")
             String account,
             String password,
             String merchantName,
