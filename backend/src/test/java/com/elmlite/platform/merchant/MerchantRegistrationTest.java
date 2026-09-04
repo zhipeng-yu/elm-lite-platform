@@ -10,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -151,5 +152,31 @@ class MerchantRegistrationTest {
                 .andExpect(jsonPath("$.code").value(409))
                 .andExpect(jsonPath("$.msg").value("商家账号已存在"))
                 .andExpect(jsonPath("$.data").isEmpty());
+    }
+    @ParameterizedTest
+    @CsvSource({
+            "account, 50",
+            "merchantName, 100",
+            "contactName, 50",
+            "contactPhone, 20"
+    })
+    void shouldRejectOverlongRegistrationField(
+            String field, int maxLength) throws Exception {
+        var body = new ObjectMapper().createObjectNode();
+        body.put("account", "new_merchant");
+        body.put("password", "test_password_123");
+        body.put("merchantName", "校园美食店");
+        body.put("contactName", "测试联系人");
+        body.put("contactPhone", "19900000003");
+        body.put(field, "1".repeat(maxLength + 1));
+
+        mockMvc.perform(post("/api/v1/merchants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.data.fieldErrors." + field).exists());
+
+        org.mockito.Mockito.verifyNoInteractions(merchantService);
     }
 }
