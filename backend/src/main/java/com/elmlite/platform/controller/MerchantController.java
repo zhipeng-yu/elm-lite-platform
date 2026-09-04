@@ -44,6 +44,7 @@ public class MerchantController {
     public record MerchantRegisterRequest(
             @NotBlank(message = "商家账号不能为空")
             String account,
+            @NotBlank(message = "密码不能为空")
             String password,
             String merchantName,
             String contactName,
