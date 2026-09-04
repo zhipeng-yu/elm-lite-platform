@@ -1,7 +1,7 @@
 # 接口契约与登录鉴权方案
 
 - 状态：三名成员已确认
-- 确认日期：2026-09-02
+- 确认日期：2026-09-02；商家身份方案补充确认：2026-09-04
 
 ## 1. 全局接口契约
 
@@ -10,7 +10,7 @@
 - 请求和响应使用 `Content-Type: application/json`。
 - 时间使用 ISO 8601，例如 `2026-09-02T12:00:00+08:00`。
 - 金额使用整数分，例如 `priceCent: 1590`。
-- 地址、购物车和订单等用户资源不接收客户端传入的 `userId`，后端从登录凭据取得当前用户。
+- 地址、购物车和订单等用户资源不接收客户端传入的 `userId`，后端从登录凭据取得当前用户；创建店铺同样不接收 `merchantId`。
 
 成功响应统一为：
 
@@ -159,23 +159,28 @@ GET /api/v1/shops/{id}
 
 `businessStatus` 与数据库一致：`0` 表示休息，`1` 表示营业，`2` 表示临时闭店。接口金额继续使用整数分，Service 负责与数据库 `DECIMAL` 元金额转换，Entity 不直接作为响应返回。D3 基础范围直接返回数组，暂不增加分页。
 
-### 3.3 尚待确认的商家管理接口
+### 3.3 商家管理鉴权约定
 
-商家注册、开店和营业状态修改涉及独立商家账号的鉴权方式，现有用户 JWT 契约不能直接复用。相关路径和鉴权方式由老师或小组确认后再冻结；确认前不得用客户端传入的 `merchantId` 代替身份校验。
+- 用户和商家使用独立账号，继续使用现有 `users` 与 `merchant` 表结构，不修改 D2 Entity 和数据库。
+- 商家使用独立登录入口，登录成功后签发 `accountType=MERCHANT` 的 Token。
+- 创建店铺时，后端使用 Token 的 `sub` 作为当前商家 ID 并写入 `shop.merchant_id`，前端不传 `merchantId`。
+- 修改 `/api/v1/merchant/shops/{id}` 的营业状态时，Service 必须校验店铺属于当前商家，否则返回 HTTP `403`。
+- `GET /api/v1/shops` 和 `GET /api/v1/shops/{id}` 始终无需登录。
 
 ## 4. 登录鉴权方案
 
 - 使用单个 JWT Access Token，不使用 Refresh Token。
 - Token 通过 `Authorization: Bearer <accessToken>` 请求头发送。
-- JWT 只保存 `iss`、`sub`、`iat` 和 `exp`；`iss` 固定为 `elm-lite-platform`，`sub` 保存用户 ID。
+- JWT 保存 `iss`、`sub`、`iat`、`exp` 和 `accountType`；`iss` 固定为 `elm-lite-platform`，`sub` 保存对应账号表的 ID。
+- 用户登录签发 `accountType=USER` 的 Token，商家登录签发 `accountType=MERCHANT` 的 Token；受保护接口按账号类型授权。
 - Token 有效期为 1 小时；过期后重新登录。
 - JWT 密钥从 `JWT_SECRET` 环境变量读取，禁止写入仓库。
 - 后端使用 Spring Security 的 JWT 支持校验签名和过期时间，依赖版本由 Spring Boot 管理。
 - 密码使用 BCrypt 保存，不得保存或比较明文密码。
 - 前端将 Token 保存到 `sessionStorage`，由 Axios 拦截器统一添加认证头。
 - 退出登录只删除前端 Token，暂不增加退出接口或 Token 黑名单。
-- 注册和登录是公开接口；`/users/me`、地址、购物车和订单接口必须登录。
-- 服务层根据 JWT 中的当前用户 ID 校验资源归属；登录但操作他人资源时返回 HTTP `403`。
+- 用户注册、用户登录和商家登录是公开接口；`/users/me`、地址、购物车、订单及商家管理接口必须使用对应身份登录。
+- 服务层根据 JWT 中的当前账号 ID 校验资源归属；登录但操作他人资源时返回 HTTP `403`。
 
 ## 5. 明确不做
 
@@ -184,7 +189,7 @@ GET /api/v1/shops/{id}
 ## 6. 分工与 TDD 验收
 
 - 余（A）：统一响应、异常处理、Spring Security/JWT、注册登录和鉴权测试及实现。
-- 梁（B）：确认用户和认证所需数据库字段，并负责版本化数据库迁移。
+- 梁（B）：商家注册、独立登录、店铺管理与商家资源归属校验。
 - 龙（C）：Axios 认证头、Token 保存、统一错误处理和前端登录状态。
 
 实现这些接口时必须保留测试提交早于实现提交的记录，至少覆盖注册成功、用户名冲突、登录成功、错误凭据、缺少 Token、无效 Token、过期 Token 和越权访问。

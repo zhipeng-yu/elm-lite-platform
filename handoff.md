@@ -12,7 +12,7 @@
 | --- | --- | --- | --- |
 | D1<br>日期：2026-09-02 | ✅ 已完成：Issue [#2](https://github.com/zhipeng-yu/elm-lite-platform/issues/2)，建立 Spring Boot 后端脚手架、分层目录、测试基础配置和依赖基线；PR [#6](https://github.com/zhipeng-yu/elm-lite-platform/pull/6) 已合并 | ✅ 已完成：设计 ER 图，建立 V1 数据库迁移、初始化 SQL 和字段说明；PR [#5](https://github.com/zhipeng-yu/elm-lite-platform/pull/5) 已合并 | ✅ 已完成：Issue [#10](https://github.com/zhipeng-yu/elm-lite-platform/issues/10)，建立 Vue 3 前端脚手架、Router 和页面目录；PR [#11](https://github.com/zhipeng-yu/elm-lite-platform/pull/11) 已合并 |
 | D2<br>日期：2026-09-03 | ✅ 已完成：Issue [#12](https://github.com/zhipeng-yu/elm-lite-platform/issues/12)，按红—绿—重构流程实现统一响应和异常处理；`verify` 6/6 通过；PR [#13](https://github.com/zhipeng-yu/elm-lite-platform/pull/13) 已合并 | ✅ 已完成：建立 Entity、Mapper、V2 数据库迁移和可重复的 H2 测试数据；PR [#15](https://github.com/zhipeng-yu/elm-lite-platform/pull/15) 已合并 | ✅ 已完成：封装 Axios、认证头和统一错误处理，完成基础布局及加载、空数据、错误状态模拟页面；PR [#17](https://github.com/zhipeng-yu/elm-lite-platform/pull/17) 已合并 |
-| D3<br>日期：待填写 | ⬜ 待完成：按红—绿流程完成用户注册、登录、鉴权和个人信息 | ⬜ 待完成：按红—绿流程完成商家注册及店铺开店、关店、临时闭店 | ⬜ 待完成：完成注册、登录、店铺列表和店铺详情页面，按冻结契约使用模拟数据 |
+| D3<br>日期：2026-09-04 | 🟡 已实现：Issue [#22](https://github.com/zhipeng-yu/elm-lite-platform/issues/22)，按红—绿流程完成用户注册、登录、JWT 鉴权和个人信息；用户模块回归 22/22 通过；PR [#24](https://github.com/zhipeng-yu/elm-lite-platform/pull/24) 待审核 | ⬜ 待完成：按红—绿流程完成商家注册及店铺开店、关店、临时闭店 | ⬜ 待完成：完成注册、登录、店铺列表和店铺详情页面，按冻结契约使用模拟数据 |
 | D4<br>日期：待填写 | ⬜ 待完成：按红—绿流程完成收货地址增删改查，覆盖权限、参数和边界场景 | ⬜ 待完成：按红—绿流程完成分类、商品列表、详情、价格和库存 | ⬜ 待完成：完成分类、商品列表、商品详情和地址页面，并联调已合并接口 |
 | D5<br>日期：待填写 | ⬜ 待完成：按红—绿流程完成订单创建、列表和状态查询，回归 A 板块 | ⬜ 待完成：按红—绿流程完成购物车增删改查和下单所需库存校验，回归 B 板块 | ⬜ 待完成：完成购物车、下单和订单列表页面，跑通注册至订单查询的第一轮全流程 |
 | D6<br>日期：待填写 | ⬜ 待完成：分析需求变更对 A 板块的影响，先提交失败测试，再完成最小实现和 A 板块回归 | ⬜ 待完成：分析需求变更对 B 板块及数据库的影响，先提交迁移与失败测试，再完成最小实现和 B 板块回归 | ⬜ 待完成：更新受影响页面、接口适配和验收场景，只修改 C 板块 |
@@ -23,7 +23,7 @@
 
 ## 当前阻塞
 
-- 商家注册、开店和营业状态修改的鉴权方式尚待老师或小组确认；公开店铺列表和详情接口不受影响。
+- D3 用户模块无阻塞，不依赖商家代码。完整 `verify` 共运行 66 项，61 项通过；其余 5 项是主分支现有 Mapper 扫描导致的 Web 切片测试错误，梁已在独立修复分支处理，不影响用户模块 22 项测试。
 
 ## AI 使用记录
 
@@ -44,3 +44,4 @@
 | 2026-09-03 | 辅助按红—绿—重构流程实现 D2 统一响应、异常处理及 MockMvc 测试 | `backend/src/main/java/com/elmlite/platform/common/ApiResponse.java`、`backend/src/main/java/com/elmlite/platform/exception/`、`backend/src/test/java/com/elmlite/platform/common/GlobalExceptionHandlerTest.java`、`handoff.md` | 待余复核 |
 | 2026-09-04 | 根据已合并 PR 更新 D2 三人任务完成状态 | `handoff.md` | 待余复核 |
 | 2026-09-04 | 修复演示数据与 V2 用户字段不一致，并补充 D3 公开店铺接口契约 | `database/init/V1__seed_data.sql`、`readme.md`、`api-contract.md`、`handoff.md` | 待余复核 |
+| 2026-09-04 | 辅助按红—绿流程实现 D3 用户注册、用户登录、JWT 身份区分和个人信息接口，并同步接口契约 | `backend/pom.xml`、`backend/src/main/java/com/elmlite/platform/config/SecurityConfig.java`、`backend/src/main/java/com/elmlite/platform/controller/`、`backend/src/main/java/com/elmlite/platform/service/`、`backend/src/main/resources/application.yml`、`backend/src/test/`、`api-contract.md`、`handoff.md` | 待余复核 |
