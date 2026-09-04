@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @RestController
 @RequestMapping("/api/v1/merchants")
@@ -43,14 +44,18 @@ public class MerchantController {
 
     public record MerchantRegisterRequest(
             @NotBlank(message = "商家账号不能为空")
+            @Size(max = 50, message = "商家账号不能超过50个字符")
             String account,
             @NotBlank(message = "密码不能为空")
             String password,
             @NotBlank(message = "商家名称不能为空")
+            @Size(max = 100, message = "商家名称不能超过100个字符")
             String merchantName,
             @NotBlank(message = "联系人不能为空")
+            @Size(max = 50, message = "联系人不能超过50个字符")
             String contactName,
             @NotBlank(message = "联系电话不能为空")
+            @Size(max = 20, message = "联系电话不能超过20个字符")
             String contactPhone
     ) {
         @Override
