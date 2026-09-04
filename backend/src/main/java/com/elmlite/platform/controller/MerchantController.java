@@ -47,6 +47,7 @@ public class MerchantController {
             @Size(max = 50, message = "商家账号不能超过50个字符")
             String account,
             @NotBlank(message = "密码不能为空")
+            @Size(min = 8, max = 72, message = "密码长度必须为8至72位")
             String password,
             @NotBlank(message = "商家名称不能为空")
             @Size(max = 100, message = "商家名称不能超过100个字符")
