@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class MerchantServiceTest {
@@ -50,5 +51,37 @@ class MerchantServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         assertEquals("商家账号已存在", exception.getMessage());
+    }
+    @Test
+    void shouldRegisterMerchantWithEncodedPassword() {
+        when(passwordEncoder.encode("test_password_123"))
+                .thenReturn("encoded_password");
+
+        when(merchantMapper.insert(any(Merchant.class)))
+                .thenAnswer(invocation -> {
+                    Merchant saved = invocation.getArgument(0);
+
+                    assertEquals("new_merchant", saved.getAccount());
+                    assertEquals("encoded_password", saved.getPasswordHash());
+                    assertEquals("校园美食店", saved.getMerchantName());
+                    assertEquals("测试联系人", saved.getContactName());
+                    assertEquals("19900000003", saved.getContactPhone());
+                    assertEquals(Integer.valueOf(1), saved.getStatus());
+
+                    saved.setId(10L);
+                    return 1;
+                });
+
+        Merchant result = merchantService.register(
+                "new_merchant",
+                "test_password_123",
+                "校园美食店",
+                "测试联系人",
+                "19900000003"
+        );
+
+        assertEquals(Long.valueOf(10L), result.getId());
+        verify(passwordEncoder).encode("test_password_123");
+        verify(merchantMapper).insert(any(Merchant.class));
     }
 }
