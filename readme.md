@@ -41,8 +41,26 @@ Set-Location .\backend
 ```powershell
 $env:DB_USERNAME = '<本机 MySQL 用户名>'
 $env:DB_PASSWORD = '<本机 MySQL 密码>'
+$env:JWT_SECRET = '<本机生成的至少32字节随机密钥>'
 .\mvnw.cmd spring-boot:run
 ```
+
+将示例占位符替换为本机配置；密钥不得提交到 Git。`JAVA_HOME` 应指向 JDK 21 安装目录。
+
+## 前端开发与联调
+
+前端位于 `front-end/`，先安装锁定的依赖：
+
+```powershell
+Set-Location .\front-end
+npm ci
+$env:VITE_USE_MOCK = 'false'
+npm run dev
+```
+
+真实联调前先启动后端；Vite 将 `/api` 转发到 `http://localhost:8080`。模拟页面验证时将 `VITE_USE_MOCK` 改为 `'true'` 并重启 Vite；未设置时开发模式默认启用模拟接口。切换模式后退出登录再重新登录，模拟 Token 无法用于真实后端；模拟注册数据在刷新后丢失。
+
+前端检查：`node --test tests/request.test.js` 验证 mock 与真实 HTTP 的分流，`npm run build` 检查生产构建。`npm run preview` 仅预览构建产物，部署时需由 Web 服务器配置 `/api` 转发。
 
 ## 基础功能
 
