@@ -179,4 +179,23 @@ class MerchantRegistrationTest {
 
         org.mockito.Mockito.verifyNoInteractions(merchantService);
     }
+    @ParameterizedTest
+    @ValueSource(ints = {7, 73})
+    void shouldRejectInvalidPasswordLength(int length) throws Exception {
+        var body = new ObjectMapper().createObjectNode();
+        body.put("account", "new_merchant");
+        body.put("password", "a".repeat(length));
+        body.put("merchantName", "校园美食店");
+        body.put("contactName", "测试联系人");
+        body.put("contactPhone", "19900000003");
+
+        mockMvc.perform(post("/api/v1/merchants")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.data.fieldErrors.password").exists());
+
+        org.mockito.Mockito.verifyNoInteractions(merchantService);
+    }
 }
