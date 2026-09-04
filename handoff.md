@@ -29,7 +29,7 @@
 
 ## 2026-09-05：D4 开发前障碍清理
 
-- 关联 Issue [#26](https://github.com/zhipeng-yu/elm-lite-platform/issues/26)，分支 `fix/zp-day4-readiness`；按 PR merge commit 交付，保留测试先于修复的历史。
+- 关联 Issue [#26](https://github.com/zhipeng-yu/elm-lite-platform/issues/26)，交付 PR [#27](https://github.com/zhipeng-yu/elm-lite-platform/pull/27)（合并状态见链接），分支 `fix/zp-day4-readiness`；按 merge commit 交付，保留测试先于修复的历史。
 - 范围：补齐已冻结的 D3 公开店铺列表/详情契约，按整数分返回金额、列表省略地址、详情包含地址；不存在返回 404，非法 ID 返回统一 400。没有开发 D4 地址、分类或商品功能，没有变更数据库结构或依赖。
 - 修复 mock 未匹配请求的 `realAdapter is not a function`；注册页面长度限制与后端对齐。README 补充 JWT 配置、前端启动和真实/mock 切换；数据字典补齐 V2 的用户名和可空手机号。
 - 基线：最新 main 后端 `verify` 103/103 通过，原 Mapper 扫描阻塞已消失；前端 `npm ci` 成功。
