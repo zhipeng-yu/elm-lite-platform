@@ -57,9 +57,13 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(requests -> requests
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/merchants",
+                                "/api/v1/merchant/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/shops/**").permitAll()
                         .requestMatchers("/api/v1/users/me").hasAuthority("USER")
+                        .requestMatchers("/api/v1/merchant/shops", "/api/v1/merchant/shops/**").hasAuthority("MERCHANT")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(authenticationConverter))
