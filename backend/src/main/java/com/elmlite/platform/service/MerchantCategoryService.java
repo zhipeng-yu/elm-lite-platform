@@ -1,6 +1,5 @@
 package com.elmlite.platform.service;
 
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.elmlite.platform.entity.Merchant;
 import com.elmlite.platform.entity.ProductCategory;
 import com.elmlite.platform.entity.Shop;
@@ -8,6 +7,7 @@ import com.elmlite.platform.exception.BusinessException;
 import com.elmlite.platform.mapper.MerchantMapper;
 import com.elmlite.platform.mapper.ProductCategoryMapper;
 import com.elmlite.platform.mapper.ShopMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,7 +52,7 @@ public class MerchantCategoryService {
                     HttpStatus.BAD_REQUEST, "分类名称不能超过50个字符");
         }
 
-        ensureNameUnique(shop.getId(), normalizedName, null);
+        validateSortOrder(sortOrder);
 
         ProductCategory category = new ProductCategory();
         category.setShopId(shop.getId());
@@ -60,7 +60,11 @@ public class MerchantCategoryService {
         category.setSortOrder(sortOrder == null ? 0 : sortOrder);
         category.setStatus(1);
 
-        productCategoryMapper.insert(category);
+        try {
+            productCategoryMapper.insert(category);
+        } catch (DuplicateKeyException exception) {
+            throw new BusinessException(HttpStatus.CONFLICT, "同店铺分类名称已存在");
+        }
         return category;
     }
 
@@ -97,15 +101,11 @@ public class MerchantCategoryService {
                         HttpStatus.BAD_REQUEST, "分类名称不能超过50个字符");
             }
 
-            ensureNameUnique(
-                    category.getShopId(),
-                    normalizedName,
-                    categoryId);
-
             category.setCategoryName(normalizedName);
         }
 
         if (sortOrder != null) {
+            validateSortOrder(sortOrder);
             category.setSortOrder(sortOrder);
         }
 
@@ -118,7 +118,11 @@ public class MerchantCategoryService {
         }
 
         category.setUpdatedAt(LocalDateTime.now());
-        productCategoryMapper.updateById(category);
+        try {
+            productCategoryMapper.updateById(category);
+        } catch (DuplicateKeyException exception) {
+            throw new BusinessException(HttpStatus.CONFLICT, "同店铺分类名称已存在");
+        }
 
         return category;
     }
@@ -149,22 +153,9 @@ public class MerchantCategoryService {
         }
     }
 
-    private void ensureNameUnique(
-            long shopId,
-            String categoryName,
-            Long excludedId) {
-
-        var query = Wrappers.<ProductCategory>lambdaQuery()
-                .eq(ProductCategory::getShopId, shopId)
-                .eq(ProductCategory::getCategoryName, categoryName);
-
-        if (excludedId != null) {
-            query.ne(ProductCategory::getId, excludedId);
-        }
-
-        if (productCategoryMapper.selectCount(query) > 0) {
-            throw new BusinessException(
-                    HttpStatus.CONFLICT, "同店铺分类名称已存在");
+    private void validateSortOrder(Integer sortOrder) {
+        if (sortOrder != null && sortOrder < 0) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "显示顺序不能为负数");
         }
     }
 }

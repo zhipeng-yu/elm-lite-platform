@@ -70,6 +70,7 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
   const MOCK_USERS = [
     { id: 1, username: 'demo', password: '12345678', displayName: '演示用户' }
   ]
+  const MOCK_SESSIONS = new Map()
   const MOCK_SHOPS = [
     {
       id: 1,
@@ -194,6 +195,7 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
   const MOCK_ADDRESSES = [
     {
       id: 1,
+      userId: 1,
       receiverName: '测试用户',
       receiverPhone: '19900000001',
       addressDetail: '测试校区1号宿舍楼',
@@ -202,6 +204,7 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
     },
     {
       id: 2,
+      userId: 1,
       receiverName: '测试用户',
       receiverPhone: '19900000001',
       addressDetail: '测试校区2号宿舍楼',
@@ -221,11 +224,11 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
     config
   })
 
-  const fail = (config, status, msg) => {
+  const fail = (config, status, msg, data = null) => {
     const error = new Error(`Request failed with status code ${status}`)
     error.config = config
     error.isAxiosError = true
-    error.response = { status, data: { code: status, msg }, headers: {}, config }
+    error.response = { status, data: { code: status, msg, data }, headers: {}, config }
     return error
   }
 
@@ -238,6 +241,43 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
       }
     }
     return config.data || {}
+  }
+
+  const addressData = ({ userId, ...address }) => address
+
+  const addressFields = (config, current) => {
+    let body
+    try {
+      body = typeof config.data === 'string' ? JSON.parse(config.data) : config.data
+    } catch {
+      throw fail(config, 400, '地址请求格式错误')
+    }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw fail(config, 400, '地址请求必须为对象')
+    }
+    const writable = ['receiverName', 'receiverPhone', 'addressDetail', 'addressLabel', 'isDefault']
+    for (const [key, value] of Object.entries(body)) {
+      if (!writable.includes(key) || (value !== null && (key === 'isDefault'
+        ? !Number.isInteger(value) : typeof value !== 'string'))) {
+        throw fail(config, 400, '不支持的地址字段或字段类型错误')
+      }
+    }
+    if (current && Object.keys(body).length === 0) {
+      throw fail(config, 400, '修改内容不能为空')
+    }
+    const fields = { isDefault: 0, addressLabel: null, ...current, ...body }
+    for (const key of writable) {
+      if (typeof fields[key] === 'string') fields[key] = fields[key].trim()
+    }
+    fields.addressLabel = fields.addressLabel || null
+    const fieldErrors = {}
+    if (!fields.receiverName || fields.receiverName.length > 50) fieldErrors.receiverName = '收货人不能为空且不能超过50位'
+    if (!/^1[0-9]{10}$/.test(fields.receiverPhone || '')) fieldErrors.receiverPhone = '联系电话必须为1开头的11位数字'
+    if (!fields.addressDetail || fields.addressDetail.length > 255) fieldErrors.addressDetail = '详细地址不能为空且不能超过255位'
+    if (fields.addressLabel?.length > 20) fieldErrors.addressLabel = '地址标签不能超过20位'
+    if (fields.isDefault !== 0 && fields.isDefault !== 1) fieldErrors.isDefault = '默认标记必须为0或1'
+    if (Object.keys(fieldErrors).length) throw fail(config, 400, '参数校验失败', { fieldErrors })
+    return fields
   }
 
   service.defaults.adapter = async (config) => {
@@ -288,8 +328,10 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
       if (!found) {
         return Promise.reject(fail(config, 401, '账号或密码错误'))
       }
+      const accessToken = `mock-jwt-${found.id}-${Date.now()}`
+      MOCK_SESSIONS.set(accessToken, { userId: found.id, expiresAt: Date.now() + 3600_000 })
       return ok(config, {
-        accessToken: `mock-jwt-${found.id}-${Date.now()}`,
+        accessToken,
         expiresIn: 3600,
         user: {
           id: found.id,
@@ -369,87 +411,48 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
       return ok(config, { ...product, categoryName: category?.categoryName || '' })
     }
 
-    // ---------- D4：收货地址接口（需要登录，只拦截地址路径） ----------
-    const isAddressUrl =
-      url === '/addresses' || /^\/addresses\/\d+$/.test(url)
-    if (isAddressUrl && !config.headers?.Authorization) {
+    // ---------- D4：收货地址接口（会话和归属均来自模拟登录） ----------
+    if (url === '/addresses' || /^\/addresses\/[^/]+$/.test(url)) {
       await wait(600)
-      return Promise.reject(fail(config, 401, '未登录，请先登录'))
-    }
-
-    if (method === 'get' && url === '/addresses') {
-      await wait(600)
-      return ok(
-        config,
-        [...MOCK_ADDRESSES].sort(
-          (a, b) => b.isDefault - a.isDefault || b.id - a.id
-        )
-      )
-    }
-
-    if (method === 'get' && /^\/addresses\/\d+$/.test(url)) {
-      await wait(600)
-      const id = Number(url.split('/').pop())
-      const item = MOCK_ADDRESSES.find((a) => a.id === id)
-      if (!item) {
-        return Promise.reject(fail(config, 404, '地址不存在'))
+      const token = config.headers?.Authorization?.match(/^Bearer (.+)$/)?.[1]
+      const session = MOCK_SESSIONS.get(token)
+      if (!session || session.expiresAt <= Date.now()) {
+        throw fail(config, 401, '未登录或登录已过期，请重新登录')
       }
-      return ok(config, item)
-    }
-
-    if (method === 'post' && url === '/addresses') {
-      await wait(600)
-      const body = parseBody(config)
-      const isDefault = body.isDefault === 1 ? 1 : 0
-      if (isDefault) {
-        MOCK_ADDRESSES.forEach((a) => {
-          a.isDefault = 0
-        })
+      const userId = session.userId
+      let item
+      if (url !== '/addresses') {
+        const idText = url.split('/').pop()
+        const id = Number(idText)
+        if (!/^-?\d+$/.test(idText) || !Number.isSafeInteger(id)) throw fail(config, 400, '地址ID格式错误')
+        item = MOCK_ADDRESSES.find((address) => address.id === id)
+        if (!item) throw fail(config, 404, '地址不存在')
+        if (item.userId !== userId) throw fail(config, 403, '无权操作该地址')
       }
-      const item = {
-        id: nextAddressId++,
-        receiverName: body.receiverName,
-        receiverPhone: body.receiverPhone,
-        addressDetail: body.addressDetail,
-        addressLabel: body.addressLabel || null,
-        isDefault
+      if (method === 'get') {
+        return ok(config, item ? addressData(item) : MOCK_ADDRESSES
+          .filter((address) => address.userId === userId)
+          .sort((a, b) => b.isDefault - a.isDefault || b.id - a.id)
+          .map(addressData))
       }
-      MOCK_ADDRESSES.push(item)
-      return ok(config, item, 201)
-    }
-
-    if (method === 'patch' && /^\/addresses\/\d+$/.test(url)) {
-      await wait(600)
-      const id = Number(url.split('/').pop())
-      const item = MOCK_ADDRESSES.find((a) => a.id === id)
-      if (!item) {
-        return Promise.reject(fail(config, 404, '地址不存在'))
-      }
-      const body = parseBody(config)
-      Object.keys(body).forEach((key) => {
-        if (key in item) {
-          item[key] = body[key]
+      if ((method === 'post' && !item) || (method === 'patch' && item)) {
+        const fields = addressFields(config, item)
+        if (fields.isDefault === 1) {
+          MOCK_ADDRESSES.filter((address) => address.userId === userId)
+            .forEach((address) => { address.isDefault = 0 })
         }
-      })
-      if (item.isDefault === 1) {
-        MOCK_ADDRESSES.forEach((a) => {
-          if (a.id !== id) {
-            a.isDefault = 0
-          }
-        })
+        if (item) {
+          Object.assign(item, fields)
+        } else {
+          item = { id: nextAddressId++, userId, ...fields }
+          MOCK_ADDRESSES.push(item)
+        }
+        return ok(config, addressData(item), method === 'post' ? 201 : 200)
       }
-      return ok(config, item)
-    }
-
-    if (method === 'delete' && /^\/addresses\/\d+$/.test(url)) {
-      await wait(600)
-      const id = Number(url.split('/').pop())
-      const index = MOCK_ADDRESSES.findIndex((a) => a.id === id)
-      if (index < 0) {
-        return Promise.reject(fail(config, 404, '地址不存在'))
+      if (method === 'delete' && item) {
+        MOCK_ADDRESSES.splice(MOCK_ADDRESSES.indexOf(item), 1)
+        return ok(config, null)
       }
-      MOCK_ADDRESSES.splice(index, 1)
-      return ok(config, null)
     }
 
     return axios.getAdapter(realAdapter)(config)

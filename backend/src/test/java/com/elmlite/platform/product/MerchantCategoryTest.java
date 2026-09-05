@@ -3,17 +3,23 @@ package com.elmlite.platform.product;
 import com.elmlite.platform.entity.Merchant;
 import com.elmlite.platform.entity.ProductCategory;
 import com.elmlite.platform.entity.Shop;
+import com.elmlite.platform.exception.BusinessException;
 import com.elmlite.platform.mapper.MerchantMapper;
 import com.elmlite.platform.mapper.ProductCategoryMapper;
 import com.elmlite.platform.mapper.ShopMapper;
 import com.elmlite.platform.service.JwtTokenService;
+import com.elmlite.platform.service.MerchantCategoryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -22,6 +28,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -30,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:merchant_category_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE"
 })
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @Sql(
         scripts = "/db/h2/merchant-category-schema.sql",
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
@@ -54,6 +61,9 @@ class MerchantCategoryTest {
 
     @Autowired
     private JwtTokenService jwtTokenService;
+
+    @Autowired
+    private MerchantCategoryService categoryService;
 
     private Merchant owner;
     private Merchant other;
@@ -216,6 +226,68 @@ class MerchantCategoryTest {
                                         }
                                         """))
                 .andExpect(status().isNotFound());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void rejectsNegativeSortOrderWithoutChangingData(boolean updating) throws Exception {
+        ProductCategory category = newCategory(ownerShop.getId(), "Existing", 2, 1);
+        var request = updating
+                ? patch("/api/v1/merchant/categories/" + category.getId())
+                : post("/api/v1/merchant/shops/" + ownerShop.getId() + "/categories");
+
+        mockMvc.perform(request.header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"categoryName\":\"New category\",\"sortOrder\":-1}"))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(1L, productCategoryMapper.selectCount(null));
+        assertEquals(2, productCategoryMapper.selectById(category.getId()).getSortOrder());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void serviceRejectsNegativeSortOrderWithoutChangingData(boolean updating) {
+        ProductCategory category = newCategory(ownerShop.getId(), "Existing", 2, 1);
+
+        BusinessException error = assertThrows(BusinessException.class, () -> {
+            if (updating) {
+                categoryService.update(owner.getId(), category.getId(), null, -1, null);
+            } else {
+                categoryService.create(owner.getId(), ownerShop.getId(), "New category", -1);
+            }
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
+        assertEquals(1L, productCategoryMapper.selectCount(null));
+        assertEquals(2, productCategoryMapper.selectById(category.getId()).getSortOrder());
+    }
+
+    @Test
+    void createRejectsFractionalSortOrder() throws Exception {
+        mockMvc.perform(post("/api/v1/merchant/shops/" + ownerShop.getId() + "/categories")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"categoryName\":\"New category\",\"sortOrder\":-0.5}"))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(0L, productCategoryMapper.selectCount(null));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"sortOrder", "status"})
+    void patchRejectsFractionalIntegerFields(String field) throws Exception {
+        ProductCategory category = newCategory(ownerShop.getId(), "Existing", 2, 1);
+
+        mockMvc.perform(patch("/api/v1/merchant/categories/" + category.getId())
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(field, 0.5))))
+                .andExpect(status().isBadRequest());
+
+        ProductCategory saved = productCategoryMapper.selectById(category.getId());
+        assertEquals(2, saved.getSortOrder());
+        assertEquals(1, saved.getStatus());
     }
 
     private Merchant newMerchant(String account) {

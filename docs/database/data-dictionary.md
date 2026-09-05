@@ -63,7 +63,7 @@
 | id            | BIGINT       | PK、AI、NN | 分类编号           |
 | shop_id       | BIGINT       | FK、NN    | 所属店铺编号         |
 | category_name | VARCHAR(50)  | NN       | 分类名称，同一店铺内不可重复 |
-| sort_order    | INT UNSIGNED | NN、默认0   | 显示顺序           |
+| sort_order    | INT UNSIGNED | NN、默认0   | 显示顺序；接口接受非负 Java Integer |
 | status        | TINYINT      | NN、默认1   | 0停用，1启用        |
 | created_at    | TIMESTAMP    | NN、自动生成  | 创建时间           |
 | updated_at    | DATETIME     | 可空       | 最后修改时间         |
@@ -170,7 +170,7 @@
 6. 订单总金额等于商品总金额加配送费。
 7. 下单数量不能超过商品库存。
 8. 订单保存商品和地址快照，避免源数据修改后影响历史订单。
-9. 同店铺商品可同名，分类名保持唯一，沿用 `uk_category_shop_name`，重复返回 409。
+9. 同店铺商品可同名，分类名保持唯一，沿用 `uk_category_shop_name`；Service 将创建或修改时的唯一键冲突转换为 409，包括并发重名。
 10. 分类、商品创建时默认状态为 1；分类停用和商品下架均修改状态，不提供物理删除接口。库存为 0 可以保持上架。
 
 ## 12. 缩写说明
