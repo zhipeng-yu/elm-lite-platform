@@ -67,6 +67,7 @@ public class MerchantCategoryController {
             @Size(max = 50, message = "分类名称不能超过50个字符")
             String categoryName,
 
+            @Min(value = 0, message = "显示顺序不能为负数")
             Integer sortOrder) {
     }
 
@@ -74,6 +75,7 @@ public class MerchantCategoryController {
             @Size(max = 50, message = "分类名称不能超过50个字符")
             String categoryName,
 
+            @Min(value = 0, message = "显示顺序不能为负数")
             Integer sortOrder,
 
             @Min(value = 0, message = "分类状态必须为0或1")

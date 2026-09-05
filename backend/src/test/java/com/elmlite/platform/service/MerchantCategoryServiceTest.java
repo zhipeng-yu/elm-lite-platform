@@ -30,7 +30,7 @@ class MerchantCategoryServiceTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void duplicateKeyAfterNameCheckReturnsConflict(boolean updating) {
+    void duplicateKeyDuringWriteReturnsConflict(boolean updating) {
         Merchant merchant = new Merchant();
         merchant.setStatus(1);
         when(merchantMapper.selectById(1L)).thenReturn(merchant);
