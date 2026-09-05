@@ -61,9 +61,12 @@ public class SecurityConfig {
                                 "/api/v1/merchants",
                                 "/api/v1/merchant/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/users", "/api/v1/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/shops/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shops/**", "/api/v1/products/{id}").permitAll()
                         .requestMatchers("/api/v1/users/me").hasAuthority("USER")
+                        .requestMatchers("/api/v1/addresses", "/api/v1/addresses/**").hasAuthority("USER")
                         .requestMatchers("/api/v1/merchant/shops", "/api/v1/merchant/shops/**").hasAuthority("MERCHANT")
+                        .requestMatchers("/api/v1/merchant/categories/**", "/api/v1/merchant/products/**")
+                        .hasAuthority("MERCHANT")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(authenticationConverter))
