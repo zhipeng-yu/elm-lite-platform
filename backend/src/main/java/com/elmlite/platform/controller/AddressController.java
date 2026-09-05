@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,6 +43,18 @@ public class AddressController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<AddressResponse> create(@AuthenticationPrincipal Jwt jwt, @RequestBody AddressRequest request) {
         return ApiResponse.success(AddressResponse.from(addressService.create(Long.parseLong(jwt.getSubject()), request)));
+    }
+
+    @PatchMapping("/{id}")
+    public ApiResponse<AddressResponse> update(@AuthenticationPrincipal Jwt jwt, @PathVariable("id") long id,
+                                               @RequestBody AddressRequest request) {
+        return ApiResponse.success(AddressResponse.from(addressService.update(Long.parseLong(jwt.getSubject()), id, request)));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@AuthenticationPrincipal Jwt jwt, @PathVariable("id") long id) {
+        addressService.delete(Long.parseLong(jwt.getSubject()), id);
+        return ApiResponse.success(null);
     }
 
     public record AddressResponse(Long id, String receiverName, String receiverPhone,

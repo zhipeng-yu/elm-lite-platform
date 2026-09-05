@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestComponent;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,6 +46,7 @@ class Day4SecurityTest {
     }
 
     // 隔离鉴权测试，不实现或依赖梁的商品业务接口。
+    @TestComponent
     @RestController
     static class Probe {
         @RequestMapping({"/api/v1/products/1", "/api/v1/shops/1/products", "/api/v1/shops/1/categories",

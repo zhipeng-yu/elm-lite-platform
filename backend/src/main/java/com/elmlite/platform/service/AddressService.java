@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 public class AddressService {
@@ -44,11 +45,12 @@ public class AddressService {
     @Transactional
     public DeliveryAddress create(long userId, AddressRequest request) {
         lockUser(userId);
-        AddressRequest.Fields fields = request.fields();
-        validate(fields);
-        clearDefaultIfSelected(userId, fields.isDefault());
         DeliveryAddress address = new DeliveryAddress();
         address.setUserId(userId);
+        address.setIsDefault(0);
+        AddressRequest.Fields fields = request.fields(address);
+        validate(fields);
+        clearDefaultIfSelected(userId, fields.isDefault());
         address.setReceiverName(fields.receiverName());
         address.setReceiverPhone(fields.receiverPhone());
         address.setAddressDetail(fields.addressDetail());
@@ -56,6 +58,32 @@ public class AddressService {
         address.setIsDefault(fields.isDefault());
         addressMapper.insert(address);
         return address;
+    }
+
+    @Transactional
+    public DeliveryAddress update(long userId, long id, AddressRequest request) {
+        lockUser(userId);
+        DeliveryAddress address = requireOwned(userId, id);
+        if (request.isEmpty()) throw new BusinessException(HttpStatus.BAD_REQUEST, "修改内容不能为空");
+        AddressRequest.Fields fields = request.fields(address);
+        validate(fields);
+        clearDefaultIfSelected(userId, fields.isDefault());
+        // 显式 set 让 addressLabel=null 能入库，不受 MyBatis-Plus 默认忽略 null 的影响。
+        addressMapper.update(Wrappers.<DeliveryAddress>lambdaUpdate().eq(DeliveryAddress::getId, id)
+                .set(DeliveryAddress::getReceiverName, fields.receiverName())
+                .set(DeliveryAddress::getReceiverPhone, fields.receiverPhone())
+                .set(DeliveryAddress::getAddressDetail, fields.addressDetail())
+                .set(DeliveryAddress::getAddressLabel, fields.addressLabel())
+                .set(DeliveryAddress::getIsDefault, fields.isDefault())
+                .set(DeliveryAddress::getUpdatedAt, LocalDateTime.now()));
+        return addressMapper.selectById(id);
+    }
+
+    @Transactional
+    public void delete(long userId, long id) {
+        lockUser(userId);
+        requireOwned(userId, id);
+        addressMapper.deleteById(id);
     }
 
     private void lockUser(long userId) {

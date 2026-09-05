@@ -1,5 +1,6 @@
 package com.elmlite.platform.dto;
 
+import com.elmlite.platform.entity.DeliveryAddress;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.Max;
@@ -31,17 +32,26 @@ public class AddressRequest {
         this.body = body;
     }
 
-    public Fields fields() {
-        String label = text("addressLabel");
-        Integer isDefault = !body.has("isDefault") ? Integer.valueOf(0)
-                : body.get("isDefault").isNull() ? null : body.get("isDefault").intValue();
-        return new Fields(text("receiverName"), text("receiverPhone"), text("addressDetail"),
+    public boolean isEmpty() {
+        return body.isEmpty();
+    }
+
+    public Fields fields(DeliveryAddress current) {
+        String label = text("addressLabel", current.getAddressLabel());
+        Integer isDefault = current.getIsDefault();
+        if (body.has("isDefault")) {
+            isDefault = body.get("isDefault").isNull() ? null : body.get("isDefault").intValue();
+        }
+        return new Fields(text("receiverName", current.getReceiverName()),
+                text("receiverPhone", current.getReceiverPhone()), text("addressDetail", current.getAddressDetail()),
                 label == null || label.isEmpty() ? null : label, isDefault);
     }
 
-    private String text(String field) {
+    private String text(String field, String current) {
+        // PATCH 省略字段保留原值，显式 null 则交给校验或清空标签。
+        if (!body.has(field)) return current;
         JsonNode value = body.get(field);
-        return value == null || value.isNull() ? null : value.textValue().strip();
+        return value.isNull() ? null : value.textValue().strip();
     }
 
     public record Fields(
