@@ -12,6 +12,8 @@ CREATE TABLE product_category (
     category_name VARCHAR(50) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
     status TINYINT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     PRIMARY KEY (id),
     CONSTRAINT uk_public_product_category_shop_name
         UNIQUE (shop_id, category_name),
@@ -29,6 +31,8 @@ CREATE TABLE product (
     price DECIMAL(10,2) NOT NULL,
     stock INT NOT NULL DEFAULT 0,
     status TINYINT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
     PRIMARY KEY (id),
     CONSTRAINT fk_public_product_shop
         FOREIGN KEY (shop_id) REFERENCES shop (id),
