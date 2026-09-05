@@ -1,6 +1,7 @@
 package com.elmlite.platform.exception;
 
 import com.elmlite.platform.common.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -27,6 +28,19 @@ public class GlobalExceptionHandler {
         exception.getBindingResult().getFieldErrors().forEach(error ->
                 fieldErrors.putIfAbsent(error.getField(), error.getDefaultMessage()));
 
+        return validationError(fieldErrors);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Map<String, Map<String, String>>>> handleConstraintViolation(
+            ConstraintViolationException exception) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        exception.getConstraintViolations().forEach(violation ->
+                fieldErrors.putIfAbsent(violation.getPropertyPath().toString(), violation.getMessage()));
+        return validationError(fieldErrors);
+    }
+
+    private ResponseEntity<ApiResponse<Map<String, Map<String, String>>>> validationError(Map<String, String> fieldErrors) {
         ApiResponse<Map<String, Map<String, String>>> response = new ApiResponse<>(
                 HttpStatus.BAD_REQUEST.value(),
                 "参数校验失败",
