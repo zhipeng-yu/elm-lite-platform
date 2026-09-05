@@ -29,7 +29,7 @@
 
 ## 2026-09-05：三人确认 Day4 方案
 
-- 余确认梁、龙对《Day4 梁任务待确认事项及建议方案》和《Day4 余任务待确认事项及建议方案》均无异议。本次将结论写入仓库记录，关联 Issue [#28](https://github.com/zhipeng-yu/elm-lite-platform/issues/28)，分支 `docs/zp-day4-confirmed-contract`。
+- 余确认梁、龙对《Day4 梁任务待确认事项及建议方案》和《Day4 余任务待确认事项及建议方案》均无异议。本次将结论写入仓库记录，关联 Issue [#28](https://github.com/zhipeng-yu/elm-lite-platform/issues/28)，交付 PR [#29](https://github.com/zhipeng-yu/elm-lite-platform/pull/29)（合并状态见链接），分支 `docs/zp-day4-confirmed-contract`。
 - 地址接口、字段校验、PATCH 语义、默认地址和权限规则见 `api-contract.md` 第 5 节；分类/商品公开查询、商家管理、状态、价格和库存规则见第 6 节。
 - 冲突结论采用余清单的最终建议：同店铺分类名保持唯一并返回 409，替代梁清单的早期可重名建议；地址物理删除作为历史关联数据不物理删除的例外，沿用 `ON DELETE SET NULL` 且保留订单快照。数据库说明已同步，不修改现有 SQL。
 - 余负责公共 `SecurityConfig`、地址模块和契约汇总；梁负责分类/商品及 Service 归属校验、数据库相关文件；龙负责页面、校验与联调。共享鉴权变更由余统一维护并与梁审查，避免三人同时修改。
