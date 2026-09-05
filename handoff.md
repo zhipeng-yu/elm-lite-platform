@@ -13,7 +13,7 @@
 | D1<br>日期：2026-09-02 | ✅ 已完成：Issue [#2](https://github.com/zhipeng-yu/elm-lite-platform/issues/2)，建立 Spring Boot 后端脚手架、分层目录、测试基础配置和依赖基线；PR [#6](https://github.com/zhipeng-yu/elm-lite-platform/pull/6) 已合并 | ✅ 已完成：设计 ER 图，建立 V1 数据库迁移、初始化 SQL 和字段说明；PR [#5](https://github.com/zhipeng-yu/elm-lite-platform/pull/5) 已合并 | ✅ 已完成：Issue [#10](https://github.com/zhipeng-yu/elm-lite-platform/issues/10)，建立 Vue 3 前端脚手架、Router 和页面目录；PR [#11](https://github.com/zhipeng-yu/elm-lite-platform/pull/11) 已合并 |
 | D2<br>日期：2026-09-03 | ✅ 已完成：Issue [#12](https://github.com/zhipeng-yu/elm-lite-platform/issues/12)，按红—绿—重构流程实现统一响应和异常处理；`verify` 6/6 通过；PR [#13](https://github.com/zhipeng-yu/elm-lite-platform/pull/13) 已合并 | ✅ 已完成：建立 Entity、Mapper、V2 数据库迁移和可重复的 H2 测试数据；PR [#15](https://github.com/zhipeng-yu/elm-lite-platform/pull/15) 已合并 | ✅ 已完成：封装 Axios、认证头和统一错误处理，完成基础布局及加载、空数据、错误状态模拟页面；PR [#17](https://github.com/zhipeng-yu/elm-lite-platform/pull/17) 已合并 |
 | D3<br>日期：2026-09-04 | ✅ 已完成：Issue [#22](https://github.com/zhipeng-yu/elm-lite-platform/issues/22)，用户注册、登录、JWT 鉴权和个人信息；用户模块回归 22/22 通过；PR [#24](https://github.com/zhipeng-yu/elm-lite-platform/pull/24) 已合并 | ✅ 已完成：商家注册、独立登录、店铺创建及营业状态和归属校验；Mapper 扫描隔离已修复；PR [#25](https://github.com/zhipeng-yu/elm-lite-platform/pull/25) 已合并 | ✅ 已完成：注册、登录、店铺列表和详情页面及模拟数据；PR [#21](https://github.com/zhipeng-yu/elm-lite-platform/pull/21) 已合并 |
-| D4<br>日期：待填写 | ⬜ 待完成：按红—绿流程完成收货地址增删改查，覆盖权限、参数和边界场景 | ⬜ 待完成：按红—绿流程完成分类、商品列表、详情、价格和库存 | ⬜ 待完成：完成分类、商品列表、商品详情和地址页面，并联调已合并接口 |
+| D4<br>日期：待填写 | 🟡 方案已确认，待开发：收货地址增删改查、默认地址、权限与边界测试；统一维护地址/商品公共鉴权配置 | 🟡 方案已确认，待开发：公开分类/商品查询与商家分类/商品管理、价格、库存及归属校验 | 🟡 方案已确认，待开发：分类、商品列表/详情及地址页面；按契约完成字段校验、状态提示和联调 |
 | D5<br>日期：待填写 | ⬜ 待完成：按红—绿流程完成订单创建、列表和状态查询，回归 A 板块 | ⬜ 待完成：按红—绿流程完成购物车增删改查和下单所需库存校验，回归 B 板块 | ⬜ 待完成：完成购物车、下单和订单列表页面，跑通注册至订单查询的第一轮全流程 |
 | D6<br>日期：待填写 | ⬜ 待完成：分析需求变更对 A 板块的影响，先提交失败测试，再完成最小实现和 A 板块回归 | ⬜ 待完成：分析需求变更对 B 板块及数据库的影响，先提交迁移与失败测试，再完成最小实现和 B 板块回归 | ⬜ 待完成：更新受影响页面、接口适配和验收场景，只修改 C 板块 |
 | D7<br>日期：待填写 | ⬜ 待完成：执行 A 板块集成、权限、边界和覆盖率检查，只修复 A 问题并冻结后端公共契约 | ⬜ 待完成：执行 B 板块集成和边界回归，验证迁移可重复执行及全新数据库初始化，只修复 B 问题 | ⬜ 待完成：完成变更后的端到端联调和前端冒烟测试，补齐加载、空数据、校验和错误提示，按负责人登记问题 |
@@ -24,12 +24,21 @@
 ## 当前阻塞
 
 - 已清除本次发现的 D3 合并与联调障碍，详见下方记录；D4 三人的新功能仍待开发。
-- 三人开始 D4 前先拉取最新 `main`，再分别建 Issue/分支。地址和商品接口尚未冻结，A/B 应先与 C 确认请求、响应和权限契约；本次未代替团队制定这些接口。
+- 地址、分类和商品确认清单已由三人同意，确认来源为余在本次会话的转述，规则已同步 `api-contract.md`；原“接口尚未冻结”的阻塞解除。三人拉取最新 `main` 后，分别创建开发 Issue/分支并按 TDD 推进。
 - 真实 MySQL 初始化、浏览器端到端联调和人工交叉验收未运行；本次自动检查不能代替这些验收。
+
+## 2026-09-05：三人确认 Day4 方案
+
+- 余确认梁、龙对《Day4 梁任务待确认事项及建议方案》和《Day4 余任务待确认事项及建议方案》均无异议。本次将结论写入仓库记录，关联 Issue [#28](https://github.com/zhipeng-yu/elm-lite-platform/issues/28)，交付 PR [#29](https://github.com/zhipeng-yu/elm-lite-platform/pull/29)（合并状态见链接），分支 `docs/zp-day4-confirmed-contract`。
+- 地址接口、字段校验、PATCH 语义、默认地址和权限规则见 `api-contract.md` 第 5 节；分类/商品公开查询、商家管理、状态、价格和库存规则见第 6 节。
+- 冲突结论采用余清单的最终建议：同店铺分类名保持唯一并返回 409，替代梁清单的早期可重名建议；地址物理删除作为历史关联数据不物理删除的例外，沿用 `ON DELETE SET NULL` 且保留订单快照。数据库说明已同步，不修改现有 SQL。
+- 余负责公共 `SecurityConfig`、地址模块和契约汇总；梁负责分类/商品及 Service 归属校验、数据库相关文件；龙负责页面、校验与联调。共享鉴权变更由余统一维护并与梁审查，避免三人同时修改。
+- 状态：方案已确认，D4 功能尚未开发。清单确认不代表 PR #27 修复代码已完成人工复核，也不代表新增测试断言或交叉验收已经通过。
+- 本次仅更新 Markdown 文档；检查文件差异、确认清单与数据库约束的一致性及 Markdown 链接/表格结构。后端测试、前端构建和运行时验收未运行。
 
 ## 2026-09-05：D4 开发前障碍清理
 
-- 关联 Issue [#26](https://github.com/zhipeng-yu/elm-lite-platform/issues/26)，交付 PR [#27](https://github.com/zhipeng-yu/elm-lite-platform/pull/27)（合并状态见链接），分支 `fix/zp-day4-readiness`；按 merge commit 交付，保留测试先于修复的历史。
+- 关联 Issue [#26](https://github.com/zhipeng-yu/elm-lite-platform/issues/26)，交付 PR [#27](https://github.com/zhipeng-yu/elm-lite-platform/pull/27) 已合并（`ec0f234`），分支 `fix/zp-day4-readiness`；按 merge commit 交付，保留测试先于修复的历史。
 - 范围：补齐已冻结的 D3 公开店铺列表/详情契约，按整数分返回金额、列表省略地址、详情包含地址；不存在返回 404，非法 ID 返回统一 400。没有开发 D4 地址、分类或商品功能，没有变更数据库结构或依赖。
 - 修复 mock 未匹配请求的 `realAdapter is not a function`；注册页面长度限制与后端对齐。README 补充 JWT 配置、前端启动和真实/mock 切换；数据字典补齐 V2 的用户名和可空手机号。
 - 基线：最新 main 后端 `verify` 103/103 通过，原 Mapper 扫描阻塞已消失；前端 `npm ci` 成功。
@@ -60,3 +69,4 @@
 | 2026-09-04 | 修复演示数据与 V2 用户字段不一致，并补充 D3 公开店铺接口契约 | `database/init/V1__seed_data.sql`、`readme.md`、`api-contract.md`、`handoff.md` | 待余复核 |
 | 2026-09-04 | 辅助按红—绿流程实现 D3 用户注册、用户登录、JWT 身份区分和个人信息接口，并同步接口契约 | `backend/pom.xml`、`backend/src/main/java/com/elmlite/platform/config/SecurityConfig.java`、`backend/src/main/java/com/elmlite/platform/controller/`、`backend/src/main/java/com/elmlite/platform/service/`、`backend/src/main/resources/application.yml`、`backend/src/test/`、`api-contract.md`、`handoff.md` | 待余复核 |
 | 2026-09-05 | 按用户授权自主检查并修复 D4 开发前的 D3 联调障碍，保留红绿测试与 PR 发布记录 | `ShopController.java`、`ShopService.java`、`GlobalExceptionHandler.java`、`PublicShopTest.java`、`front-end/src/api/request.js`、`RegisterView.vue`、`front-end/tests/request.test.js`、`readme.md`、`docs/database/data-dictionary.md`、`handoff.md` | 待余/梁/龙返岗复核；本次无人工复核，不冒记已审核 |
+| 2026-09-05 | 将三人已同意的 Day4 清单同步到接口契约、数据库业务说明及任务状态，记录分类唯一与地址删除例外 | `api-contract.md`、`docs/database/data-dictionary.md`、`docs/database/er-diagram.md`、`handoff.md` | 余转述三人已确认清单；本次文档同步待余复核 |
