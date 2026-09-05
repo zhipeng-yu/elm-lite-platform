@@ -34,6 +34,26 @@ const routes = [
         component: () => import('@/views/shop/ShopDetailView.vue')
       },
       {
+        path: 'shops/:id/categories',
+        name: 'shop-categories',
+        component: () => import('@/views/category/CategoryView.vue')
+      },
+      {
+        path: 'shops/:id/products',
+        name: 'shop-products',
+        component: () => import('@/views/product/ProductListView.vue')
+      },
+      {
+        path: 'products/:id',
+        name: 'product-detail',
+        component: () => import('@/views/product/ProductDetailView.vue')
+      },
+      {
+        path: 'addresses',
+        name: 'addresses',
+        component: () => import('@/views/address/AddressView.vue')
+      },
+      {
         path: 'mock-demo',
         name: 'mock-demo',
         component: () => import('@/views/demo/MockDemoView.vue')

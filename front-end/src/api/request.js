@@ -103,6 +103,114 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
     }
   ]
 
+  // D4 模拟分类、商品与地址，字段与 api-contract.md 第 5、6 节冻结契约一致
+  const MOCK_CATEGORIES = [
+    { id: 1, shopId: 1, categoryName: '主食', sortOrder: 1, status: 1 },
+    { id: 2, shopId: 1, categoryName: '饮品', sortOrder: 2, status: 1 },
+    { id: 3, shopId: 2, categoryName: '烧烤', sortOrder: 1, status: 1 },
+    { id: 4, shopId: 2, categoryName: '主食', sortOrder: 2, status: 1 },
+    { id: 5, shopId: 3, categoryName: '咖啡', sortOrder: 1, status: 1 },
+    { id: 6, shopId: 3, categoryName: '甜品', sortOrder: 2, status: 1 }
+  ]
+  const MOCK_PRODUCTS = [
+    {
+      id: 1,
+      shopId: 1,
+      categoryId: 1,
+      productName: '牛肉盖饭',
+      description: '演示主食商品',
+      imageUrl: null,
+      priceCent: 1800,
+      stock: 100,
+      status: 1
+    },
+    {
+      id: 2,
+      shopId: 1,
+      categoryId: 2,
+      productName: '柠檬水',
+      description: '演示饮品商品',
+      imageUrl: null,
+      priceCent: 650,
+      stock: 0,
+      status: 1
+    },
+    {
+      id: 3,
+      shopId: 1,
+      categoryId: 1,
+      productName: '下架示例商品',
+      description: 'status=0，不出现在公开列表',
+      imageUrl: null,
+      priceCent: 1500,
+      stock: 10,
+      status: 0
+    },
+    {
+      id: 4,
+      shopId: 2,
+      categoryId: 3,
+      productName: '羊肉串',
+      description: '炭火现烤',
+      imageUrl: null,
+      priceCent: 300,
+      stock: 50,
+      status: 1
+    },
+    {
+      id: 5,
+      shopId: 2,
+      categoryId: 4,
+      productName: '蛋炒饭',
+      description: '经典主食',
+      imageUrl: null,
+      priceCent: 1200,
+      stock: 30,
+      status: 1
+    },
+    {
+      id: 6,
+      shopId: 3,
+      categoryId: 5,
+      productName: '美式咖啡',
+      description: '现磨咖啡',
+      imageUrl: null,
+      priceCent: 1800,
+      stock: 20,
+      status: 1
+    },
+    {
+      id: 7,
+      shopId: 3,
+      categoryId: 6,
+      productName: '提拉米苏',
+      description: '经典甜品',
+      imageUrl: null,
+      priceCent: 2800,
+      stock: 0,
+      status: 1
+    }
+  ]
+  const MOCK_ADDRESSES = [
+    {
+      id: 1,
+      receiverName: '测试用户',
+      receiverPhone: '19900000001',
+      addressDetail: '测试校区1号宿舍楼',
+      addressLabel: '学校',
+      isDefault: 1
+    },
+    {
+      id: 2,
+      receiverName: '测试用户',
+      receiverPhone: '19900000001',
+      addressDetail: '测试校区2号宿舍楼',
+      addressLabel: null,
+      isDefault: 0
+    }
+  ]
+  let nextAddressId = 3
+
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
   const ok = (config, data, status = 200) => ({
@@ -215,6 +323,133 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
         return Promise.reject(fail(config, 404, '店铺不存在'))
       }
       return ok(config, shop)
+    }
+
+    // ---------- D4：分类、商品公开查询与详情 ----------
+    if (method === 'get' && /^\/shops\/\d+\/categories$/.test(url)) {
+      await wait(600)
+      const shopId = Number(url.split('/')[2])
+      if (!MOCK_SHOPS.some((s) => s.id === shopId)) {
+        return Promise.reject(fail(config, 404, '店铺不存在'))
+      }
+      return ok(
+        config,
+        MOCK_CATEGORIES.filter((c) => c.shopId === shopId && c.status === 1)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map(({ shopId: _shopId, status: _status, ...rest }) => rest)
+      )
+    }
+
+    if (method === 'get' && /^\/shops\/\d+\/products$/.test(url)) {
+      await wait(600)
+      const shopId = Number(url.split('/')[2])
+      if (!MOCK_SHOPS.some((s) => s.id === shopId)) {
+        return Promise.reject(fail(config, 404, '店铺不存在'))
+      }
+      const categoryId = config.params?.categoryId
+      return ok(
+        config,
+        MOCK_PRODUCTS.filter(
+          (p) =>
+            p.shopId === shopId &&
+            p.status === 1 &&
+            (!categoryId || p.categoryId === Number(categoryId))
+        ).map(({ shopId: _shopId, ...rest }) => rest)
+      )
+    }
+
+    if (method === 'get' && /^\/products\/\d+$/.test(url)) {
+      await wait(600)
+      const id = Number(url.split('/').pop())
+      const product = MOCK_PRODUCTS.find((p) => p.id === id && p.status === 1)
+      if (!product) {
+        return Promise.reject(fail(config, 404, '商品不存在'))
+      }
+      const category = MOCK_CATEGORIES.find((c) => c.id === product.categoryId)
+      return ok(config, { ...product, categoryName: category?.categoryName || '' })
+    }
+
+    // ---------- D4：收货地址接口（需要登录，只拦截地址路径） ----------
+    const isAddressUrl =
+      url === '/addresses' || /^\/addresses\/\d+$/.test(url)
+    if (isAddressUrl && !config.headers?.Authorization) {
+      await wait(600)
+      return Promise.reject(fail(config, 401, '未登录，请先登录'))
+    }
+
+    if (method === 'get' && url === '/addresses') {
+      await wait(600)
+      return ok(
+        config,
+        [...MOCK_ADDRESSES].sort(
+          (a, b) => b.isDefault - a.isDefault || b.id - a.id
+        )
+      )
+    }
+
+    if (method === 'get' && /^\/addresses\/\d+$/.test(url)) {
+      await wait(600)
+      const id = Number(url.split('/').pop())
+      const item = MOCK_ADDRESSES.find((a) => a.id === id)
+      if (!item) {
+        return Promise.reject(fail(config, 404, '地址不存在'))
+      }
+      return ok(config, item)
+    }
+
+    if (method === 'post' && url === '/addresses') {
+      await wait(600)
+      const body = parseBody(config)
+      const isDefault = body.isDefault === 1 ? 1 : 0
+      if (isDefault) {
+        MOCK_ADDRESSES.forEach((a) => {
+          a.isDefault = 0
+        })
+      }
+      const item = {
+        id: nextAddressId++,
+        receiverName: body.receiverName,
+        receiverPhone: body.receiverPhone,
+        addressDetail: body.addressDetail,
+        addressLabel: body.addressLabel || null,
+        isDefault
+      }
+      MOCK_ADDRESSES.push(item)
+      return ok(config, item, 201)
+    }
+
+    if (method === 'patch' && /^\/addresses\/\d+$/.test(url)) {
+      await wait(600)
+      const id = Number(url.split('/').pop())
+      const item = MOCK_ADDRESSES.find((a) => a.id === id)
+      if (!item) {
+        return Promise.reject(fail(config, 404, '地址不存在'))
+      }
+      const body = parseBody(config)
+      Object.keys(body).forEach((key) => {
+        if (key in item) {
+          item[key] = body[key]
+        }
+      })
+      if (item.isDefault === 1) {
+        MOCK_ADDRESSES.forEach((a) => {
+          if (a.id !== id) {
+            a.isDefault = 0
+          }
+        })
+      }
+      return ok(config, item)
+    }
+
+    if (method === 'delete' && /^\/addresses\/\d+$/.test(url)) {
+      await wait(600)
+      const id = Number(url.split('/').pop())
+      const index = MOCK_ADDRESSES.findIndex((a) => a.id === id)
+      if (index < 0) {
+        return Promise.reject(fail(config, 404, '地址不存在'))
+      }
+      MOCK_ADDRESSES.splice(index, 1)
+      return ok(config, null)
     }
 
     return axios.getAdapter(realAdapter)(config)

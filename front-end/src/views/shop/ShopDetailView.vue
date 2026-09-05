@@ -32,6 +32,14 @@
             ¥{{ formatPriceCent(shop.deliveryPriceCent) }}
           </el-descriptions-item>
         </el-descriptions>
+        <div class="actions">
+          <el-button type="primary" @click="router.push(`/shops/${shop.id}/products`)">
+            去点餐
+          </el-button>
+          <el-button @click="router.push(`/shops/${shop.id}/categories`)">
+            查看分类
+          </el-button>
+        </div>
       </template>
     </div>
   </div>
@@ -112,5 +120,11 @@ onMounted(load)
 .desc {
   color: #909399;
   margin-bottom: 16px;
+}
+
+.actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
 }
 </style>

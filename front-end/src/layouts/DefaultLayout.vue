@@ -13,6 +13,7 @@
         <el-menu router :default-active="route.path">
           <el-menu-item index="/home">首页</el-menu-item>
           <el-menu-item index="/shops">店铺</el-menu-item>
+          <el-menu-item index="/addresses">收货地址</el-menu-item>
           <el-menu-item index="/mock-demo">模拟状态验证</el-menu-item>
         </el-menu>
       </el-aside>
