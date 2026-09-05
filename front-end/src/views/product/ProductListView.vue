@@ -55,6 +55,7 @@ const errorMsg = ref('')
 const categories = ref([])
 const products = ref([])
 const activeTab = ref(String(route.query.categoryId || '0'))
+let latestRequest = 0
 
 function goDetail(id) {
   router.push(`/products/${id}`)
@@ -69,16 +70,25 @@ function handleTabChange(name) {
 }
 
 async function loadProducts() {
+  const requestId = ++latestRequest
   loading.value = true
   errorMsg.value = ''
   try {
     const categoryId = activeTab.value === '0' ? undefined : Number(activeTab.value)
-    products.value = await fetchProducts(route.params.id, categoryId)
+    const list = await fetchProducts(route.params.id, categoryId)
+    if (requestId === latestRequest) {
+      products.value = list
+    }
   } catch (error) {
+    if (requestId !== latestRequest) {
+      return
+    }
     products.value = []
     errorMsg.value = error.response?.data?.msg || '加载失败，请稍后重试'
   } finally {
-    loading.value = false
+    if (requestId === latestRequest) {
+      loading.value = false
+    }
   }
 }
 

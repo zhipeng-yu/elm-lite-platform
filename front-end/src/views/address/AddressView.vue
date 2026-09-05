@@ -2,7 +2,7 @@
   <div class="addresses">
     <div class="header">
       <h2>收货地址</h2>
-      <el-button type="primary" :disabled="loading" @click="openCreate">
+      <el-button type="primary" :disabled="loading || submitting" @click="openCreate">
         新增地址
       </el-button>
     </div>
@@ -25,8 +25,8 @@
           </div>
           <p class="detail">{{ item.addressDetail }}</p>
           <div class="actions">
-            <el-button link type="primary" @click="openEdit(item)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(item)">删除</el-button>
+            <el-button link type="primary" :disabled="submitting" @click="openEdit(item)">编辑</el-button>
+            <el-button link type="danger" :disabled="submitting" @click="handleDelete(item)">删除</el-button>
           </div>
         </li>
       </ul>
@@ -36,16 +36,19 @@
       v-model="dialogVisible"
       :title="editingId ? '编辑地址' : '新增地址'"
       width="480px"
+      :show-close="!submitting"
+      :close-on-click-modal="!submitting"
+      :close-on-press-escape="!submitting"
       @closed="resetForm"
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="收货人" prop="receiverName">
+      <el-form ref="formRef" :model="form" :rules="rules" :disabled="submitting" label-width="90px">
+        <el-form-item label="收货人" prop="receiverName" :error="fieldErrors.receiverName">
           <el-input v-model="form.receiverName" placeholder="最长 50 个字符" />
         </el-form-item>
-        <el-form-item label="手机号" prop="receiverPhone">
+        <el-form-item label="手机号" prop="receiverPhone" :error="fieldErrors.receiverPhone">
           <el-input v-model="form.receiverPhone" placeholder="11 位手机号" />
         </el-form-item>
-        <el-form-item label="详细地址" prop="addressDetail">
+        <el-form-item label="详细地址" prop="addressDetail" :error="fieldErrors.addressDetail">
           <el-input
             v-model="form.addressDetail"
             type="textarea"
@@ -53,18 +56,15 @@
             placeholder="最长 255 个字符"
           />
         </el-form-item>
-        <el-form-item label="标签" prop="addressLabel">
+        <el-form-item label="标签" prop="addressLabel" :error="fieldErrors.addressLabel">
           <el-input v-model="form.addressLabel" placeholder="可选，最长 20 个字符" />
         </el-form-item>
-        <el-form-item label="设为默认">
-          <el-switch
-            v-model="defaultOn"
-            :disabled="form.isDefault === 1 && editingId"
-          />
+        <el-form-item label="设为默认" prop="isDefault" :error="fieldErrors.isDefault">
+          <el-switch v-model="defaultOn" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button :disabled="submitting" @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">
           保存
         </el-button>
@@ -93,6 +93,7 @@ const submitting = ref(false)
 const editingId = ref(null)
 const formRef = ref()
 const defaultOn = ref(false)
+const fieldErrors = ref({})
 
 const form = reactive({
   receiverName: '',
@@ -127,6 +128,7 @@ function resetForm() {
   form.addressLabel = ''
   form.isDefault = 0
   defaultOn.value = false
+  fieldErrors.value = {}
   formRef.value?.clearValidate()
 }
 
@@ -160,17 +162,24 @@ async function load() {
 }
 
 async function handleSubmit() {
-  const valid = await formRef.value.validate().catch(() => false)
-  if (!valid) {
+  if (submitting.value) {
     return
   }
   submitting.value = true
+  fieldErrors.value = {}
   try {
+    for (const field of ['receiverName', 'receiverPhone', 'addressDetail', 'addressLabel']) {
+      form[field] = form[field].trim()
+    }
+    const valid = await formRef.value.validate().catch(() => false)
+    if (!valid) {
+      return
+    }
     const payload = {
-      receiverName: form.receiverName.trim(),
-      receiverPhone: form.receiverPhone.trim(),
-      addressDetail: form.addressDetail.trim(),
-      addressLabel: form.addressLabel.trim() || null,
+      receiverName: form.receiverName,
+      receiverPhone: form.receiverPhone,
+      addressDetail: form.addressDetail,
+      addressLabel: form.addressLabel || null,
       isDefault: defaultOn.value ? 1 : 0
     }
     if (editingId.value) {
@@ -183,29 +192,35 @@ async function handleSubmit() {
     dialogVisible.value = false
     await load()
   } catch (error) {
-    // 字段错误等由拦截器统一提示，这里保留对话框以便修改
-    ElMessage.error(error.response?.data?.msg || '保存失败，请稍后重试')
+    // 通用错误由拦截器提示，字段错误显示在对应输入框下方。
+    fieldErrors.value = error.response?.data?.data?.fieldErrors || {}
   } finally {
     submitting.value = false
   }
 }
 
 async function handleDelete(item) {
-  try {
-    await ElMessageBox.confirm(
-      `确定删除“${item.receiverName}”的这条地址吗？`,
-      '删除确认',
-      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
-    )
-  } catch {
+  if (submitting.value) {
     return
   }
+  submitting.value = true
   try {
+    try {
+      await ElMessageBox.confirm(
+        `确定删除“${item.receiverName}”的这条地址吗？`,
+        '删除确认',
+        { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+      )
+    } catch {
+      return
+    }
     await deleteAddress(item.id)
-    ElMessage.success('地址已删除')
+    ElMessage.success(item.isDefault === 1 ? '地址已删除，请重新选择默认地址' : '地址已删除')
     await load()
   } catch (error) {
     ElMessage.error(error.response?.data?.msg || '删除失败，请稍后重试')
+  } finally {
+    submitting.value = false
   }
 }
 
