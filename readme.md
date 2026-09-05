@@ -53,14 +53,14 @@ $env:JWT_SECRET = '<本机生成的至少32字节随机密钥>'
 
 ```powershell
 Set-Location .\front-end
-npm ci
+npm.cmd ci
 $env:VITE_USE_MOCK = 'false'
-npm run dev
+npm.cmd run dev
 ```
 
-真实联调前先启动后端；Vite 将 `/api` 转发到 `http://localhost:8080`。模拟页面验证时将 `VITE_USE_MOCK` 改为 `'true'` 并重启 Vite；未设置时开发模式默认启用模拟接口。切换模式后退出登录再重新登录，模拟 Token 无法用于真实后端；模拟注册数据在刷新后丢失。
+真实联调前先启动后端；Vite 将 `/api` 转发到 `http://localhost:8080`。模拟页面验证时将 `VITE_USE_MOCK` 改为 `'true'` 并重启 Vite；未设置时开发模式默认启用模拟接口。切换模式后退出登录再重新登录，模拟 Token 无法用于真实后端；模拟账号、地址修改和登录会话只保存在内存，刷新后恢复初始数据并需要重新登录。新注册用户的模拟地址列表为空，演示地址只属于 `demo`。
 
-前端检查：`node --test tests/request.test.js` 验证 mock 与真实 HTTP 的分流，`npm run build` 检查生产构建。`npm run preview` 仅预览构建产物，部署时需由 Web 服务器配置 `/api` 转发。
+前端检查：`node --test tests/request.test.js tests/product-list.test.js` 验证 mock/真实 HTTP 分流、地址契约和分类切换请求顺序，`npm.cmd run build` 检查生产构建。PowerShell 使用 `npm.cmd` 可避免本机脚本执行策略拦截 `npm.ps1`。`npm.cmd run preview` 仅预览构建产物，部署时需由 Web 服务器配置 `/api` 转发。
 
 ## 基础功能
 
