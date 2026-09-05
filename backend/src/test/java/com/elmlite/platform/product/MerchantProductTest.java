@@ -16,6 +16,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.jdbc.Sql;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:merchant_product_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE"
 })
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @Sql(
         scripts = "/db/h2/merchant-product-schema.sql",
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
@@ -371,6 +372,48 @@ class MerchantProductTest {
                                         }
                                         """))
                 .andExpect(status().isNotFound());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"categoryId", "priceCent", "stock"})
+    void createRejectsFractionalIntegerFields(String field) throws Exception {
+        Map<String, Object> body = validBody();
+        body.put(field, switch (field) {
+            case "categoryId" -> ownerCategory.getId() + 0.5;
+            case "priceCent" -> 1800.9;
+            default -> -0.5;
+        });
+
+        mockMvc.perform(post("/api/v1/merchant/shops/" + ownerShop.getId() + "/products")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(0L, productMapper.selectCount(null));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"categoryId", "priceCent", "stock", "status"})
+    void patchRejectsFractionalIntegerFields(String field) throws Exception {
+        Product product = newProduct(ownerShop.getId(), ownerCategory.getId());
+        double value = switch (field) {
+            case "categoryId" -> ownerCategory.getId() + 0.5;
+            case "priceCent" -> 2500.9;
+            default -> 0.5;
+        };
+
+        mockMvc.perform(patch("/api/v1/merchant/products/" + product.getId())
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(field, value))))
+                .andExpect(status().isBadRequest());
+
+        Product saved = productMapper.selectById(product.getId());
+        assertEquals(ownerCategory.getId(), saved.getCategoryId());
+        assertEquals(0, new BigDecimal("18.00").compareTo(saved.getPrice()));
+        assertEquals(10, saved.getStock());
+        assertEquals(1, saved.getStatus());
     }
 
     private Map<String, Object> validBody() {
