@@ -24,7 +24,7 @@
 ## 2026-09-06：D4 合并后集成检查
 
 - PR #31、#33、#35 已于 2026-09-06 07:25（北京时间）合并；本地 `main` 从 `27f71ea` 快进到 `6a8bede`，无 Git 文本冲突。原有未跟踪 `.vscode/` 保留且未提交。
-- 本次集成任务：Issue [#36](https://github.com/zhipeng-yu/elm-lite-platform/issues/36)，分支 `fix/zp-day4-integration`。修复整数请求被截断、分类负排序与并发重名返回 500；修复默认地址取消、字段错误提示、模拟地址越权/非法写入，以及快速切分类时旧响应覆盖当前结果。未扩展 D5 功能、增加项目依赖或修改数据库结构。
+- 本次集成任务：Issue [#36](https://github.com/zhipeng-yu/elm-lite-platform/issues/36)，交付 PR [#37](https://github.com/zhipeng-yu/elm-lite-platform/pull/37)（本记录随 PR 合入 `main`），分支 `fix/zp-day4-integration`。修复整数请求被截断、分类负排序与并发重名返回 500；修复默认地址取消、字段错误提示、模拟地址越权/非法写入，以及快速切分类时旧响应覆盖当前结果。未扩展 D5 功能、增加项目依赖或修改数据库结构。
 - TDD 记录：前端地址测试提交 `1ccb0e8`（修复前 2/5 通过，3 项失败）；后端测试提交 `e84934d`（定向 33 项中新增 16 项失败）；商品切换测试提交 `d0cd69c`（4 项均先失败）。上述测试均早于实现提交。
 
 | 实际检查 | 结果 |
