@@ -137,6 +137,21 @@ public class CartService {
         cartItemMapper.deleteById(item.getId());
     }
 
+    @Transactional
+    public void clearPurchasedItems(
+            long userId,
+            List<Long> productIds) {
+
+        if (productIds == null || productIds.isEmpty()) {
+            return;
+        }
+
+        cartItemMapper.delete(
+                Wrappers.<CartItem>lambdaQuery()
+                        .eq(CartItem::getUserId, userId)
+                        .in(CartItem::getProductId, productIds));
+    }
+
     private void validateSingleShop(
             long userId,
             Product newProduct) {
