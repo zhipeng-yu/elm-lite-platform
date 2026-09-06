@@ -3,8 +3,10 @@ package com.elmlite.platform.service;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.elmlite.platform.entity.CartItem;
 import com.elmlite.platform.entity.Product;
+import com.elmlite.platform.exception.BusinessException;
 import com.elmlite.platform.mapper.CartItemMapper;
 import com.elmlite.platform.mapper.ProductMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -44,7 +46,50 @@ public class CartService {
 
         userService.getCurrent(userId);
 
+        if (quantity == null || quantity <= 0) {
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST,
+                    "商品数量必须为正整数");
+        }
+
         Product product = productMapper.selectById(productId);
+
+        if (product == null) {
+            throw new BusinessException(
+                    HttpStatus.NOT_FOUND,
+                    "商品不存在");
+        }
+
+        if (!Integer.valueOf(1).equals(product.getStatus())) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "商品已下架");
+        }
+
+        CartItem existing = cartItemMapper.selectOne(
+                Wrappers.<CartItem>lambdaQuery()
+                        .eq(CartItem::getUserId, userId)
+                        .eq(CartItem::getProductId, productId));
+
+        int targetQuantity = quantity;
+
+        if (existing != null) {
+            targetQuantity = Math.addExact(
+                    existing.getQuantity(),
+                    quantity);
+        }
+
+        if (targetQuantity > product.getStock()) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "库存不足");
+        }
+
+        if (existing != null) {
+            existing.setQuantity(targetQuantity);
+            cartItemMapper.updateById(existing);
+            return toResponse(existing, product);
+        }
 
         CartItem item = new CartItem();
         item.setUserId(userId);
