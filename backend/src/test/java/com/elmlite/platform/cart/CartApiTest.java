@@ -289,6 +289,66 @@ class CartApiTest {
                         Integer.class));
     }
 
+    @Test
+    void rejectsAddingProductFromDifferentShop() throws Exception {
+        jdbc.update("""
+                INSERT INTO product (
+                    id,
+                    shop_id,
+                    category_id,
+                    product_name,
+                    description,
+                    image_url,
+                    price,
+                    stock,
+                    status
+                )
+                VALUES (
+                    3,
+                    20,
+                    2,
+                    'Noodles',
+                    'Different shop product',
+                    'noodles.png',
+                    15.00,
+                    8,
+                    1
+                )
+                """);
+
+        mvc.perform(post(URL)
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "productId": 3,
+                                  "quantity": 1
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409));
+
+        assertEquals(
+                Integer.valueOf(0),
+                jdbc.queryForObject(
+                        """
+                        SELECT COUNT(*)
+                        FROM cart_item
+                        WHERE user_id = 1 AND product_id = 3
+                        """,
+                        Integer.class));
+
+        assertEquals(
+                Integer.valueOf(1),
+                jdbc.queryForObject(
+                        """
+                        SELECT COUNT(*)
+                        FROM cart_item
+                        WHERE user_id = 1
+                        """,
+                        Integer.class));
+    }
+
     private String user(long id) {
         return "Bearer " + tokens.issue(id, AccountType.USER);
     }
