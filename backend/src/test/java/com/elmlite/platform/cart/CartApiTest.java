@@ -95,6 +95,105 @@ class CartApiTest {
                         Integer.class));
     }
 
+    @Test
+    void repeatedAddAccumulatesQuantityWithoutDuplicateRow() throws Exception {
+        mvc.perform(post(URL)
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "productId": 1,
+                                  "quantity": 3
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.quantity").value(5));
+
+        assertEquals(
+                Integer.valueOf(5),
+                jdbc.queryForObject(
+                        """
+                        SELECT quantity
+                        FROM cart_item
+                        WHERE user_id = 1 AND product_id = 1
+                        """,
+                        Integer.class));
+
+        assertEquals(
+                Integer.valueOf(1),
+                jdbc.queryForObject(
+                        """
+                        SELECT COUNT(*)
+                        FROM cart_item
+                        WHERE user_id = 1 AND product_id = 1
+                        """,
+                        Integer.class));
+    }
+
+    @Test
+    void rejectsNonPositiveQuantity() throws Exception {
+        for (int quantity : new int[]{0, -1}) {
+            mvc.perform(post(URL)
+                            .header("Authorization", user(1))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {
+                                      "productId": 2,
+                                      "quantity": %d
+                                    }
+                                    """.formatted(quantity)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value(400));
+        }
+    }
+
+    @Test
+    void rejectsOffShelfProduct() throws Exception {
+        jdbc.update("UPDATE product SET status = 0 WHERE id = 2");
+
+        mvc.perform(post(URL)
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "productId": 2,
+                                  "quantity": 1
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409));
+    }
+
+    @Test
+    void rejectsQuantityGreaterThanStock() throws Exception {
+        mvc.perform(post(URL)
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "productId": 2,
+                                  "quantity": 6
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409));
+    }
+
+    @Test
+    void rejectsFractionalQuantity() throws Exception {
+        mvc.perform(post(URL)
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "productId": 2,
+                                  "quantity": 1.5
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
     private String user(long id) {
         return "Bearer " + tokens.issue(id, AccountType.USER);
     }
