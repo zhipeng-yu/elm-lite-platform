@@ -93,9 +93,9 @@ public class MerchantProductService {
 
         requireActiveMerchant(merchantId);
 
-        Product product = productMapper.selectById(productId);
+        Product current = productMapper.selectById(productId);
 
-        if (product == null) {
+        if (current == null) {
             throw new BusinessException(
                     HttpStatus.NOT_FOUND,
                     "商品不存在");
@@ -104,7 +104,11 @@ public class MerchantProductService {
         Shop shop =
                 requireOwnedShop(
                         merchantId,
-                        product.getShopId());
+                        current.getShopId());
+
+        // 只写入本次请求字段，避免名称等修改覆盖并发下单已扣减的库存。
+        Product product = new Product();
+        product.setId(productId);
 
         if (categoryId != null) {
             ProductCategory category =
@@ -155,7 +159,7 @@ public class MerchantProductService {
         product.setUpdatedAt(LocalDateTime.now());
         productMapper.updateById(product);
 
-        return product;
+        return productMapper.selectById(productId);
     }
 
     private ProductCategory requireUsableCategory(
