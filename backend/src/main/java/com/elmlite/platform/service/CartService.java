@@ -8,6 +8,7 @@ import com.elmlite.platform.mapper.CartItemMapper;
 import com.elmlite.platform.mapper.ProductMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -39,6 +40,7 @@ public class CartService {
                 .toList();
     }
 
+    @Transactional
     public CartItemResponse add(
             long userId,
             Long productId,
@@ -46,11 +48,7 @@ public class CartService {
 
         userService.getCurrent(userId);
 
-        if (quantity == null || quantity <= 0) {
-            throw new BusinessException(
-                    HttpStatus.BAD_REQUEST,
-                    "商品数量必须为正整数");
-        }
+        validateQuantity(quantity);
 
         Product product = productMapper.selectById(productId);
 
@@ -60,11 +58,7 @@ public class CartService {
                     "商品不存在");
         }
 
-        if (!Integer.valueOf(1).equals(product.getStatus())) {
-            throw new BusinessException(
-                    HttpStatus.CONFLICT,
-                    "商品已下架");
-        }
+        validateProductAvailable(product);
 
         CartItem existing = cartItemMapper.selectOne(
                 Wrappers.<CartItem>lambdaQuery()
@@ -79,11 +73,7 @@ public class CartService {
                     quantity);
         }
 
-        if (targetQuantity > product.getStock()) {
-            throw new BusinessException(
-                    HttpStatus.CONFLICT,
-                    "库存不足");
-        }
+        validateStock(product, targetQuantity);
 
         if (existing != null) {
             existing.setQuantity(targetQuantity);
@@ -99,6 +89,96 @@ public class CartService {
         cartItemMapper.insert(item);
 
         return toResponse(item, product);
+    }
+
+    @Transactional
+    public CartItemResponse update(
+            long userId,
+            long id,
+            Integer quantity) {
+
+        userService.getCurrent(userId);
+
+        validateQuantity(quantity);
+
+        CartItem item = requireOwned(userId, id);
+
+        Product product =
+                productMapper.selectById(item.getProductId());
+
+        if (product == null) {
+            throw new BusinessException(
+                    HttpStatus.NOT_FOUND,
+                    "商品不存在");
+        }
+
+        validateProductAvailable(product);
+        validateStock(product, quantity);
+
+        item.setQuantity(quantity);
+        cartItemMapper.updateById(item);
+
+        return toResponse(item, product);
+    }
+
+    @Transactional
+    public void delete(
+            long userId,
+            long id) {
+
+        userService.getCurrent(userId);
+
+        CartItem item = requireOwned(userId, id);
+
+        cartItemMapper.deleteById(item.getId());
+    }
+
+    private CartItem requireOwned(
+            long userId,
+            long id) {
+
+        CartItem item = cartItemMapper.selectById(id);
+
+        if (item == null) {
+            throw new BusinessException(
+                    HttpStatus.NOT_FOUND,
+                    "购物车项不存在");
+        }
+
+        if (!Long.valueOf(userId).equals(item.getUserId())) {
+            throw new BusinessException(
+                    HttpStatus.FORBIDDEN,
+                    "无权操作该购物车项");
+        }
+
+        return item;
+    }
+
+    private void validateQuantity(Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST,
+                    "商品数量必须为正整数");
+        }
+    }
+
+    private void validateProductAvailable(Product product) {
+        if (!Integer.valueOf(1).equals(product.getStatus())) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "商品已下架");
+        }
+    }
+
+    private void validateStock(
+            Product product,
+            int quantity) {
+
+        if (quantity > product.getStock()) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "库存不足");
+        }
     }
 
     private CartItemResponse toResponse(CartItem item) {
@@ -126,7 +206,9 @@ public class CartService {
                 product.getStock(),
                 product.getStatus(),
                 item.getQuantity(),
-                Math.multiplyExact(priceCent, item.getQuantity()));
+                Math.multiplyExact(
+                        priceCent,
+                        item.getQuantity()));
     }
 
     public record CartItemResponse(
