@@ -160,12 +160,15 @@ class MerchantProductTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
+                                          "categoryId": %d,
                                           "productName": "Updated Rice",
+                                          "description": "Updated description",
+                                          "imageUrl": "https://example.com/updated-rice.jpg",
                                           "priceCent": 2500,
                                           "stock": 8,
                                           "status": 0
                                         }
-                                        """))
+                                        """.formatted(ownerCategory.getId())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.productName")
@@ -180,7 +183,14 @@ class MerchantProductTest {
         Product saved =
                 productMapper.selectById(product.getId());
 
+        assertEquals(ownerCategory.getId(), saved.getCategoryId());
         assertEquals("Updated Rice", saved.getProductName());
+        assertEquals(
+                "Updated description",
+                saved.getDescription());
+        assertEquals(
+                "https://example.com/updated-rice.jpg",
+                saved.getImageUrl());
         assertEquals(
                 0,
                 new BigDecimal("25.00")
