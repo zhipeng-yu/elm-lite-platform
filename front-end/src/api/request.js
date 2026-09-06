@@ -214,6 +214,12 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
   ]
   let nextAddressId = 3
 
+  // D5 模拟购物车与订单，字段与 api-contract.md 第 7、8 节冻结契约一致
+  const MOCK_CART_ITEMS = []
+  let nextCartItemId = 1
+  const MOCK_ORDERS = []
+  let nextOrderId = 1
+
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
   const ok = (config, data, status = 200) => ({
@@ -279,6 +285,45 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
     if (Object.keys(fieldErrors).length) throw fail(config, 400, '参数校验失败', { fieldErrors })
     return fields
   }
+
+  const requireSession = (config) => {
+    const token = config.headers?.Authorization?.match(/^Bearer (.+)$/)?.[1]
+    const session = MOCK_SESSIONS.get(token)
+    if (!session || session.expiresAt <= Date.now()) {
+      throw fail(config, 401, '未登录或登录已过期，请重新登录')
+    }
+    return session
+  }
+
+  const cartItemView = (item) => {
+    const product = MOCK_PRODUCTS.find((p) => p.id === item.productId)
+    return {
+      id: item.id,
+      productId: product.id,
+      shopId: product.shopId,
+      productName: product.productName,
+      imageUrl: product.imageUrl,
+      priceCent: product.priceCent,
+      stock: product.stock,
+      status: product.status,
+      quantity: item.quantity,
+      subtotalCent: product.priceCent * item.quantity
+    }
+  }
+
+  const orderSummary = (order) => ({
+    id: order.id,
+    orderNo: order.orderNo,
+    shopId: order.shopId,
+    orderStatus: order.orderStatus,
+    totalAmountCent: order.totalAmountCent,
+    createdAt: order.createdAt
+  })
+
+  const orderView = (order) => ({ ...orderSummary(order), ...order.detail })
+
+  const isoWithOffset = () =>
+    new Date(Date.now() + 8 * 3600_000).toISOString().replace('Z', '+08:00')
 
   service.defaults.adapter = async (config) => {
     const { url, method } = config
@@ -452,6 +497,154 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
       if (method === 'delete' && item) {
         MOCK_ADDRESSES.splice(MOCK_ADDRESSES.indexOf(item), 1)
         return ok(config, null)
+      }
+    }
+
+    // ---------- D5：购物车接口（会话和归属均来自模拟登录） ----------
+    if (url === '/cart/items' || /^\/cart\/items\/[^/]+$/.test(url)) {
+      await wait(600)
+      const session = requireSession(config)
+      const userId = session.userId
+      let item
+      if (url !== '/cart/items') {
+        const idText = url.split('/').pop()
+        if (!/^\d+$/.test(idText)) throw fail(config, 400, '购物车ID格式错误')
+        const id = Number(idText)
+        item = MOCK_CART_ITEMS.find((c) => c.id === id)
+        if (!item) throw fail(config, 404, '购物车商品不存在')
+        if (item.userId !== userId) throw fail(config, 403, '无权操作该购物车商品')
+      }
+      if (method === 'get') {
+        return ok(config, MOCK_CART_ITEMS.filter((c) => c.userId === userId).map(cartItemView))
+      }
+      if (method === 'post' && url === '/cart/items') {
+        const body = parseBody(config)
+        const { productId, quantity } = body
+        if (!Number.isInteger(productId) || productId <= 0) throw fail(config, 400, '商品ID必须为正整数')
+        if (!Number.isInteger(quantity) || quantity <= 0) throw fail(config, 400, '数量必须为正整数')
+        const product = MOCK_PRODUCTS.find((p) => p.id === productId)
+        if (!product) throw fail(config, 404, '商品不存在')
+        if (product.status !== 1) throw fail(config, 409, '商品已下架')
+        const existing = MOCK_CART_ITEMS.filter((c) => c.userId === userId)
+        const otherShop = existing.find(
+          (c) => MOCK_PRODUCTS.find((p) => p.id === c.productId).shopId !== product.shopId
+        )
+        if (otherShop) throw fail(config, 409, '购物车只允许同一店铺的商品')
+        const dup = existing.find((c) => c.productId === productId)
+        const targetQty = (dup?.quantity || 0) + quantity
+        if (targetQty > product.stock) throw fail(config, 409, '库存不足')
+        if (dup) {
+          dup.quantity = targetQty
+          return ok(config, cartItemView(dup), 201)
+        }
+        const created = { id: nextCartItemId++, userId, productId, quantity }
+        MOCK_CART_ITEMS.push(created)
+        return ok(config, cartItemView(created), 201)
+      }
+      if (method === 'patch' && item) {
+        const body = parseBody(config)
+        const keys = Object.keys(body)
+        if (keys.length !== 1 || keys[0] !== 'quantity') throw fail(config, 400, '仅支持修改 quantity')
+        if (!Number.isInteger(body.quantity) || body.quantity <= 0) throw fail(config, 400, '数量必须为正整数')
+        const product = MOCK_PRODUCTS.find((p) => p.id === item.productId)
+        if (body.quantity > product.stock) throw fail(config, 409, '库存不足')
+        item.quantity = body.quantity
+        return ok(config, cartItemView(item))
+      }
+      if (method === 'delete' && item) {
+        MOCK_CART_ITEMS.splice(MOCK_CART_ITEMS.indexOf(item), 1)
+        return ok(config, null)
+      }
+    }
+
+    // ---------- D5：订单接口（创建、列表与详情） ----------
+    if (url === '/orders' || /^\/orders\/[^/]+$/.test(url)) {
+      await wait(600)
+      const session = requireSession(config)
+      const userId = session.userId
+      let order
+      if (url !== '/orders') {
+        const idText = url.split('/').pop()
+        if (!/^\d+$/.test(idText)) throw fail(config, 400, '订单ID格式错误')
+        const id = Number(idText)
+        order = MOCK_ORDERS.find((o) => o.id === id)
+        if (!order) throw fail(config, 404, '订单不存在')
+        if (order.userId !== userId) throw fail(config, 403, '无权查看该订单')
+      }
+      if (method === 'get') {
+        if (order) return ok(config, orderView(order))
+        return ok(
+          config,
+          MOCK_ORDERS.filter((o) => o.userId === userId)
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
+            .map(orderSummary)
+        )
+      }
+      if (method === 'post' && url === '/orders') {
+        const body = parseBody(config)
+        const { addressId, cartItemIds, remark } = body
+        if (!Number.isInteger(addressId) || addressId <= 0) throw fail(config, 400, '地址ID必须为正整数')
+        if (!Array.isArray(cartItemIds) || cartItemIds.length === 0) throw fail(config, 400, '请选择要下单的购物车商品')
+        if (
+          cartItemIds.some((v) => !Number.isInteger(v) || v <= 0) ||
+          new Set(cartItemIds).size !== cartItemIds.length
+        ) {
+          throw fail(config, 400, '购物车商品ID必须为不重复的正整数')
+        }
+        let remarkValue = null
+        if (remark != null) {
+          if (typeof remark !== 'string') throw fail(config, 400, '备注必须为字符串')
+          remarkValue = remark.trim().slice(0, 255) || null
+        }
+        const address = MOCK_ADDRESSES.find((a) => a.id === addressId)
+        if (!address) throw fail(config, 404, '地址不存在')
+        if (address.userId !== userId) throw fail(config, 403, '无权使用该地址')
+        const items = cartItemIds.map((id) => MOCK_CART_ITEMS.find((c) => c.id === id))
+        if (items.some((c) => !c)) throw fail(config, 404, '购物车商品不存在')
+        if (items.some((c) => c.userId !== userId)) throw fail(config, 403, '无权操作该购物车商品')
+        const products = items.map((c) => MOCK_PRODUCTS.find((p) => p.id === c.productId))
+        if (products.some((p) => p.status !== 1)) throw fail(config, 409, '商品已下架')
+        if (products.some((p, i) => p.stock < items[i].quantity)) throw fail(config, 409, '库存不足')
+        if (new Set(products.map((p) => p.shopId)).size !== 1) throw fail(config, 409, '只能对同一店铺的商品下单')
+        const shop = MOCK_SHOPS.find((s) => s.id === products[0].shopId)
+        if (shop.businessStatus !== 1) throw fail(config, 409, '店铺未营业，暂无法下单')
+        const productAmountCent = products.reduce((sum, p, i) => sum + p.priceCent * items[i].quantity, 0)
+        if (productAmountCent < shop.startPriceCent) throw fail(config, 409, '未达到店铺起送价')
+        const totalAmountCent = productAmountCent + shop.deliveryPriceCent
+        if (totalAmountCent > 9_999_999_999) throw fail(config, 409, '订单金额超出上限')
+        products.forEach((p, i) => {
+          p.stock -= items[i].quantity
+        })
+        items.forEach((c) => MOCK_CART_ITEMS.splice(MOCK_CART_ITEMS.indexOf(c), 1))
+        const id = nextOrderId++
+        const createdAt = isoWithOffset()
+        const orderItems = items.map((c, i) => ({
+          productId: products[i].id,
+          productName: products[i].productName,
+          unitPriceCent: products[i].priceCent,
+          quantity: c.quantity,
+          subtotalCent: products[i].priceCent * c.quantity
+        }))
+        order = {
+          id,
+          userId,
+          orderNo: `TEST${Date.now()}${String(id).padStart(3, '0')}`,
+          shopId: shop.id,
+          orderStatus: 0,
+          totalAmountCent,
+          createdAt,
+          detail: {
+            receiverName: address.receiverName,
+            receiverPhone: address.receiverPhone,
+            deliveryAddress: address.addressDetail,
+            productAmountCent,
+            deliveryFeeCent: shop.deliveryPriceCent,
+            remark: remarkValue,
+            items: orderItems
+          }
+        }
+        MOCK_ORDERS.push(order)
+        return ok(config, orderView(order), 201)
       }
     }
 

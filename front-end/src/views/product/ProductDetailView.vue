@@ -33,6 +33,17 @@
             </el-button>
           </el-descriptions-item>
         </el-descriptions>
+        <div class="cart-actions">
+          <el-input-number v-model="quantity" :min="1" :max="product.stock" :disabled="product.stock === 0" />
+          <el-button
+            type="primary"
+            :disabled="product.stock === 0"
+            :loading="adding"
+            @click="handleAddToCart"
+          >
+            加入购物车
+          </el-button>
+        </div>
       </template>
     </div>
   </div>
@@ -41,7 +52,9 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
+import { addCartItem } from '@/api/cart'
 import { fetchProduct } from '@/api/product'
 import { formatPriceCent } from '@/utils/format'
 
@@ -52,6 +65,20 @@ const loading = ref(false)
 const notFound = ref(false)
 const errorMsg = ref('')
 const product = ref(null)
+const quantity = ref(1)
+const adding = ref(false)
+
+async function handleAddToCart() {
+  adding.value = true
+  try {
+    await addCartItem(product.value.id, quantity.value)
+    ElMessage.success('已加入购物车')
+  } catch (error) {
+    ElMessage.error(error.response?.data?.msg || '加入购物车失败，请稍后重试')
+  } finally {
+    adding.value = false
+  }
+}
 
 function goBack() {
   if (product.value?.shopId) {
@@ -109,5 +136,12 @@ onMounted(load)
 .desc {
   color: #909399;
   margin-bottom: 16px;
+}
+
+.cart-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  align-items: center;
 }
 </style>

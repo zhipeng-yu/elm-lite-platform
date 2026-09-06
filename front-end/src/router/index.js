@@ -54,6 +54,26 @@ const routes = [
         component: () => import('@/views/address/AddressView.vue')
       },
       {
+        path: 'cart',
+        name: 'cart',
+        component: () => import('@/views/cart/CartView.vue')
+      },
+      {
+        path: 'checkout',
+        name: 'checkout',
+        component: () => import('@/views/order/CheckoutView.vue')
+      },
+      {
+        path: 'orders',
+        name: 'orders',
+        component: () => import('@/views/order/OrderListView.vue')
+      },
+      {
+        path: 'orders/:id',
+        name: 'order-detail',
+        component: () => import('@/views/order/OrderDetailView.vue')
+      },
+      {
         path: 'mock-demo',
         name: 'mock-demo',
         component: () => import('@/views/demo/MockDemoView.vue')
