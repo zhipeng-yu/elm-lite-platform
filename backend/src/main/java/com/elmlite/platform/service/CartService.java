@@ -65,6 +65,10 @@ public class CartService {
                         .eq(CartItem::getUserId, userId)
                         .eq(CartItem::getProductId, productId));
 
+        if (existing == null) {
+            validateSingleShop(userId, product);
+        }
+
         int targetQuantity = quantity;
 
         if (existing != null) {
@@ -131,6 +135,30 @@ public class CartService {
         CartItem item = requireOwned(userId, id);
 
         cartItemMapper.deleteById(item.getId());
+    }
+
+    private void validateSingleShop(
+            long userId,
+            Product newProduct) {
+
+        List<CartItem> currentItems =
+                cartItemMapper.selectList(
+                        Wrappers.<CartItem>lambdaQuery()
+                                .eq(CartItem::getUserId, userId));
+
+        for (CartItem item : currentItems) {
+            Product existingProduct =
+                    productMapper.selectById(item.getProductId());
+
+            if (existingProduct != null
+                    && !existingProduct.getShopId()
+                    .equals(newProduct.getShopId())) {
+
+                throw new BusinessException(
+                        HttpStatus.CONFLICT,
+                        "购物车只能包含同一店铺的商品");
+            }
+        }
     }
 
     private CartItem requireOwned(
