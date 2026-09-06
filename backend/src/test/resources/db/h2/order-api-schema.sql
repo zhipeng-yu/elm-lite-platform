@@ -149,4 +149,3 @@ CREATE TABLE order_item (
     CONSTRAINT fk_order_item_product
         FOREIGN KEY (product_id) REFERENCES product (id)
 );
-

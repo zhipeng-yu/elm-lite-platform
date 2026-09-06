@@ -64,6 +64,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/shops/**", "/api/v1/products/{id}").permitAll()
                         .requestMatchers("/api/v1/users/me").hasAuthority("USER")
                         .requestMatchers("/api/v1/addresses", "/api/v1/addresses/**").hasAuthority("USER")
+                        .requestMatchers("/api/v1/cart/**", "/api/v1/orders", "/api/v1/orders/**").hasAuthority("USER")
                         .requestMatchers("/api/v1/merchant/shops", "/api/v1/merchant/shops/**").hasAuthority("MERCHANT")
                         .requestMatchers("/api/v1/merchant/categories/**", "/api/v1/merchant/products/**")
                         .hasAuthority("MERCHANT")
