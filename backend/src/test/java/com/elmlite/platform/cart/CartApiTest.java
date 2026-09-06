@@ -13,7 +13,9 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -192,6 +194,99 @@ class CartApiTest {
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400));
+    }
+
+    @Test
+    void updatesOwnedCartItemQuantity() throws Exception {
+        mvc.perform(patch(URL + "/1")
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "quantity": 4
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.id").value(1))
+                .andExpect(jsonPath("$.data.productId").value(1))
+                .andExpect(jsonPath("$.data.quantity").value(4))
+                .andExpect(jsonPath("$.data.subtotalCent").value(7200))
+                .andExpect(jsonPath("$.data.userId").doesNotExist());
+
+        assertEquals(
+                Integer.valueOf(4),
+                jdbc.queryForObject(
+                        "SELECT quantity FROM cart_item WHERE id = 1",
+                        Integer.class));
+    }
+
+    @Test
+    void rejectsZeroQuantityOnUpdate() throws Exception {
+        mvc.perform(patch(URL + "/1")
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "quantity": 0
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+
+        assertEquals(
+                Integer.valueOf(2),
+                jdbc.queryForObject(
+                        "SELECT quantity FROM cart_item WHERE id = 1",
+                        Integer.class));
+    }
+
+    @Test
+    void rejectsUpdateBeyondStock() throws Exception {
+        mvc.perform(patch(URL + "/1")
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "quantity": 11
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409));
+
+        assertEquals(
+                Integer.valueOf(2),
+                jdbc.queryForObject(
+                        "SELECT quantity FROM cart_item WHERE id = 1",
+                        Integer.class));
+    }
+
+    @Test
+    void forbidsUpdatingAnotherUsersCartItem() throws Exception {
+        mvc.perform(patch(URL + "/2")
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "quantity": 2
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    @Test
+    void deletesOwnedCartItem() throws Exception {
+        mvc.perform(delete(URL + "/1")
+                        .header("Authorization", user(1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0));
+
+        assertEquals(
+                Integer.valueOf(0),
+                jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM cart_item WHERE id = 1",
+                        Integer.class));
     }
 
     private String user(long id) {
