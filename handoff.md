@@ -53,4 +53,4 @@
 | 2026-09-06 | 辅助 D5 订单与鉴权的红—绿开发、库存/清理对接和库存覆盖修复，执行回归并同步文档；按余要求删除交接流水章节、固化禁止新增规则 | 订单 Controller/DTO/Service、`CheckoutService`、`ProductMapper`、`MerchantProductService`、`SecurityConfig`、D5 测试及 H2 数据、`AGENTS.md`、`api-contract.md`、数据库字段说明、`handoff.md` | 余已确认需求及前三批测试断言，并授权后续自主处理和提交 PR；补充测试、最终代码及结果待余/梁复核，未冒记人工验收 |
 | 2026-09-07 | 按用户要求解决 PR #41 与最新 main 的冲突，保留 main 的商品行锁、原子扣库存及更新时间；执行后端和前端回归 | `ProductMapper.java`、`handoff.md`；其余为 main 合入内容 | 待余/梁复核；本次未代替人工审核 |
 | 2026-09-07 | 审核 PR #41；先以 5 个失败测试复现用户锁缺失、并发丢数量和溢出 500，再最小修复并执行完整回归；红绿证据见 PR 描述及 `backend/target/pr41-review-*.log` | `CartService.java`、`CartApiTest.java`、`CartWriteLockTest.java`、`handoff.md` | 余已确认新增测试断言并授权修复后合并；AI 辅助审核不冒充人工交叉验收 |
-| 2026-09-07 | 核实 D5 三个 PR 合并状态，清理过期阻塞并同步测试命令、数量溢出契约；检查文档差异与引用路径 | `handoff.md`、`readme.md`、`api-contract.md` | 余明确授权本次纯文档更新直接提交 main；文字待余复核 |
+| 2026-09-07 | 核实 D5 三个 PR 合并状态，清理过期阻塞并同步测试命令、数量溢出契约；检查文档差异与引用路径 | `handoff.md`、`readme.md`、`api-contract.md` | 余授权本次纯文档更新，后改为通过 PR 提交；文字待余复核 |
