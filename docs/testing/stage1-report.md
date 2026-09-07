@@ -1,0 +1,36 @@
+# 阶段一收尾验证报告
+
+## 范围与环境
+
+本次对应 Issue #47，覆盖新增商家管理查询、个人信息和商家管理页面、认证跳转、独立演示启动及真实数据库流程。环境为 Windows、JDK 21、MySQL 8.4.9、Node 24.19.0，依赖沿用仓库版本，无新增依赖。
+
+## 实际执行结果
+
+| 检查 | 结果与证据 |
+| --- | --- |
+| `mvnw.cmd -Dtest=MerchantManagementReadTest test`（实现前） | 9 个失败、0 错误；查询接口未实现。`backend/target/stage1-read-red.log` |
+| 同一测试（实现后） | 9/9 通过。`backend/target/stage1-read-green.log` |
+| `mvnw.cmd verify`（最终） | 316/316 通过，无失败/错误/跳过。`backend/target/stage1-final-verify.log` |
+| `node --test tests/*.test.js` | 16/16 通过；覆盖原有 mock、真实 HTTP 转发及新表单、商家登录跳转、旧 Token 排除 |
+| `npm.cmd run build` | 通过；Element Plus 主包仍有超过 500 kB 的构建提示，本次不扩大范围进行打包重构 |
+| MySQL 全新初始化 | 两个独立数据库均依次应用 V1/V2/seed 成功；第二个数据库再次导入 seed 成功，均有 9 张表；未重复执行版本迁移 |
+| `python scripts/stage1-smoke.py <真实 API 地址>` | 6 组通过；分别直连后端及经过 Vite `/api` 代理执行。`backend/target/local-demo/http-report.json` |
+| `scripts/start-demo.ps1` | 已实际启动独立 MySQL、后端与 Vite，并通过其前端代理执行真实 HTTP 冒烟；复用数据库重启成功，停止后三个独立端口均释放 |
+| 浏览器实际点击、截图与布局验收 | **未完成**：Edge 扩展已安装启用，但控制请求通信失败；本会话内置浏览器不可用。不能用构建或 HTTP 检查代替此项 |
+| 人工交叉验收 | **未执行**，由余、梁、龙完成，AI 不代替人工结论 |
+
+真实 HTTP 六组检查包含：商家注册登录、空店铺与分类商品创建；用户注册登录、昵称修改、身份隔离；闭店下单回滚、成功下单金额/库存/购物车清理、订单越权拒绝及地址删除后快照保留；下架/停用管理数据恢复；并发争抢最后库存一单成功一单 409、无超卖且失败方购物车保留；并发新增默认地址仍唯一。MySQL 查询另外确认已删除地址的订单 `address_id` 置空。
+
+## 覆盖率口径
+
+JaCoCo 报告：`backend/target/site/jacoco/index.html`，XML 为同目录 `jacoco.xml`。
+
+- 所有 Controller 类行覆盖率为 100%。此项不等同于所有可能的请求分支均已覆盖。
+- 所有 Service 类行覆盖率超过 90%；本次新增三个管理列表方法均为 100%。
+- 关键公开业务方法行覆盖率均达到 90%；其中 `OrderService`、`CheckoutService`、`AddressService` 为 100%，商品详情查询为 100%，分类修改为 96.15%，购物车修改为 92.31%。部分私有字段校验辅助方法低于 90%，没有将类覆盖率冒称为全部方法 100%。
+
+## 提交与复核
+
+管理查询先有 `dd90f97 test(merchant)` 红灯提交，再有 `974f9d3 feat(merchant)` 实现。商品表单、商家 401 跳转及旧 Token 排除均保留先失败测试、后实现的提交记录。最后三个商品/分类边界用例用于检验已有实现，首次执行即通过，不宣称是新功能红灯。
+
+AI 用于小范围查询实现、页面、测试及联调材料。余已转述另外两名成员授权共同收尾；最终接口、断言、代码与演示结果待余/梁/龙人工复核。浏览器验收恢复后按 `docs/demo.md` 操作并补充实际结果，再确定展示验收结论。
