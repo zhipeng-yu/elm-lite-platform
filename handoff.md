@@ -15,7 +15,7 @@
 | D3<br>日期：2026-09-04 | ✅ 已完成：Issue [#22](https://github.com/zhipeng-yu/elm-lite-platform/issues/22)，用户注册、登录、JWT 鉴权和个人信息；用户模块回归 22/22 通过；PR [#24](https://github.com/zhipeng-yu/elm-lite-platform/pull/24) 已合并 | ✅ 已完成：商家注册、独立登录、店铺创建及营业状态和归属校验；Mapper 扫描隔离已修复；PR [#25](https://github.com/zhipeng-yu/elm-lite-platform/pull/25) 已合并 | ✅ 已完成：注册、登录、店铺列表和详情页面及模拟数据；PR [#21](https://github.com/zhipeng-yu/elm-lite-platform/pull/21) 已合并 |
 | D4<br>日期：2026-09-05 | ✅ 已完成：Issue [#30](https://github.com/zhipeng-yu/elm-lite-platform/issues/30)，地址增删改查、默认地址与公共鉴权；PR [#31](https://github.com/zhipeng-yu/elm-lite-platform/pull/31) 已合并 | ✅ 已完成：Issue [#32](https://github.com/zhipeng-yu/elm-lite-platform/issues/32)，公开分类/商品查询、商家分类/商品管理、价格库存与归属校验；PR [#33](https://github.com/zhipeng-yu/elm-lite-platform/pull/33) 已合并 | ✅ 已完成：Issue [#34](https://github.com/zhipeng-yu/elm-lite-platform/issues/34)，分类、商品列表/详情、地址页面与模拟接口；PR [#35](https://github.com/zhipeng-yu/elm-lite-platform/pull/35) 已合并 |
 | D5<br>日期：2026-09-06 | ✅ 开发完成并合并：Issue [#39](https://github.com/zhipeng-yu/elm-lite-platform/issues/39)，PR [#40](https://github.com/zhipeng-yu/elm-lite-platform/pull/40)；订单创建、列表/详情、公共鉴权及库存/清理事务对接已完成；集成回归 `verify` 304/304 通过，保留红—绿提交 | ✅ 开发完成并合并：Issue [#38](https://github.com/zhipeng-yu/elm-lite-platform/issues/38)，PR [#41](https://github.com/zhipeng-yu/elm-lite-platform/pull/41)；购物车 CRUD、单店/归属/库存校验及并发丢数量、锁顺序、数量溢出修复完成；CartService 行覆盖率 97.39%，分类/商品管理 Service 均超过 90% | 🟨 页面开发已合并，真实联调待完成：PR [#43](https://github.com/zhipeng-yu/elm-lite-platform/pull/43)；购物车、下单、订单列表/详情及 mock 全流程已实现；前端测试 12/12、生产构建通过；关闭 mock 的全流程验收顺延 |
-| D6<br>日期：2026-09-07 | 🟨 阶段一收尾：Issue [#47](https://github.com/zhipeng-yu/elm-lite-platform/issues/47)；余获三人授权统一推进；后端 316/316、核心公开业务方法行覆盖率达标，补齐演示指南与启动脚本；草稿 PR [#48](https://github.com/zhipeng-yu/elm-lite-platform/pull/48) 已提交，待页面验收 | 🟨 商家管理查询已按红—绿提交；真实 MySQL 两次全新初始化及 seed 重复导入、并发库存、默认地址、外键快照检查通过；旧辅助方法清理仍由 PR #46 独立处理 | 🟨 个人信息及商家注册登录、店铺/分类/商品管理页面已补齐；前端 16/16、生产构建及通过 Vite 的真实 HTTP 流程通过；浏览器点击和人工演示验收待完成 |
+| D6<br>日期：2026-09-07 | 🟨 阶段一收尾：Issue [#47](https://github.com/zhipeng-yu/elm-lite-platform/issues/47)；余获三人授权统一推进；后端 316/316、核心公开业务方法行覆盖率达标，补齐演示指南与启动脚本；PR [#48](https://github.com/zhipeng-yu/elm-lite-platform/pull/48) 已提交，浏览器主流程通过，待人工复核 | 🟨 商家管理查询已按红—绿提交；真实 MySQL 两次全新初始化及 seed 重复导入、并发库存、默认地址、外键快照检查通过；旧辅助方法清理仍由 PR #46 独立处理 | 🟨 个人信息及商家注册登录、店铺/分类/商品管理页面已补齐；前端 16/16、生产构建及通过 Vite 的真实 HTTP 流程通过；Edge 商家与应用内浏览器用户实际点击主流程通过（订单 ¥27、库存 10→8）；人工演示验收待完成 |
 | D7<br>日期：待填写 | ⬜ 待完成：执行 A 板块集成、权限、边界和覆盖率检查，只修复 A 问题并冻结后端公共契约 | ⬜ 待完成：执行 B 板块集成和边界回归，验证迁移可重复执行及全新数据库初始化，只修复 B 问题 | ⬜ 待完成：完成变更后的端到端联调和前端冒烟测试，补齐加载、空数据、校验和错误提示，按负责人登记问题 |
 | D8<br>日期：待填写 | ⬜ 待完成：运行完整后端测试和覆盖率检查，检查 REST/统一响应规范，汇总 README、API 和技术交付说明 | ⬜ 待完成：执行干净环境数据库部署验证，准备演示数据、最终 SQL、数据字典和数据库说明 | ⬜ 待完成：执行最终演示与交叉验收，整理 Postman/ApiFox 集合、测试报告、需求变更记录、验收报告、截图和答辩材料 |
 
@@ -23,14 +23,14 @@
 
 ## 当前阻塞
 
-- 真实 MySQL 与关闭 mock 的 HTTP 流程已验证；浏览器实际点击、截图与人工交叉验收尚未完成。Edge 扩展已安装启用，但本次会话控制请求失败；内置浏览器不可用。恢复浏览器连接后按 `docs/demo.md` 验证页面，详细证据见 `docs/testing/stage1-report.md`。
+- 真实 MySQL、关闭 mock 的 HTTP 流程和两种浏览器实际点击主流程均已验证；连接阻塞已解除。人工交叉验收仍待完成，详细证据见 `docs/testing/stage1-report.md`。
 - 最终代码、测试断言及结果待余/梁/龙复核；PR #46 的旧辅助方法清理独立进行，订单继续统一使用 `CheckoutService`。本次只提交 PR，不合并。
 
 ## AI 使用记录
 
 | 日期 | 用途 | 涉及文件 | 人工复核人 |
 | --- | --- | --- | --- |
-| 2026-09-07 | 按余转述三人授权补齐阶段一管理查询与页面，保留红—绿提交，执行真实 MySQL/HTTP、回归与覆盖率检查，准备本地演示；遵循 ponytail，不新增依赖 | 商家 Controller/Service 与测试、前端页面/API/认证/样式/测试、`scripts/`、`docs/demo.md`、`docs/testing/stage1-report.md`、`api-contract.md`、`readme.md`、`handoff.md` | 待余/梁/龙复核；浏览器点击及人工验收未完成，未冒记通过 |
+| 2026-09-07 | 按余转述三人授权补齐阶段一管理查询与页面，保留红—绿提交，执行真实 MySQL/HTTP、回归与覆盖率检查，准备本地演示；遵循 ponytail，不新增依赖 | 商家 Controller/Service 与测试、前端页面/API/认证/样式/测试、`scripts/`、`docs/demo.md`、`docs/testing/stage1-report.md`、`api-contract.md`、`readme.md`、`handoff.md` | 待余/梁/龙复核；浏览器点击主流程已通过，人工验收未完成，未冒记人工结论 |
 | 2026-09-01 | 汇总课程要求并建立团队、Git 与 AI 协作规则 | `readme.md`、`AGENTS.md`、`handoff.md` | 待填写 |
 | 2026-09-01 | 为 GitHub 新手补充可逐步执行的 PowerShell、VS Code、PR 和冲突处理流程 | `readme.md`、`handoff.md` | 待填写 |
 | 2026-09-01 | 将稳定成员协作规则迁移到 CONTRIBUTING，并同步 README、AI 规则和交接记录 | `readme.md`、`CONTRIBUTING.md`、`AGENTS.md`、`handoff.md` | 待填写 |
