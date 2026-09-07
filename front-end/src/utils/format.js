@@ -16,3 +16,22 @@ export const BUSINESS_STATUS_TAG = {
   1: 'success',
   2: 'warning'
 }
+
+// orderStatus 与 api-contract.md 第 8 节一致：0 待处理、1 已确认、2 制作中、3 配送中、4 已完成、5 已取消
+export const ORDER_STATUS_TEXT = {
+  0: '待处理',
+  1: '已确认',
+  2: '制作中',
+  3: '配送中',
+  4: '已完成',
+  5: '已取消'
+}
+
+export const ORDER_STATUS_TAG = {
+  0: 'warning',
+  1: 'primary',
+  2: 'primary',
+  3: 'primary',
+  4: 'success',
+  5: 'info'
+}
