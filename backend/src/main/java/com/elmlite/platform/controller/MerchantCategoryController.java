@@ -15,6 +15,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import java.util.List;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +28,12 @@ public class MerchantCategoryController {
     public MerchantCategoryController(
             MerchantCategoryService merchantCategoryService) {
         this.merchantCategoryService = merchantCategoryService;
+    }
+
+    @GetMapping("/api/v1/merchant/shops/{shopId}/categories")
+    public ApiResponse<List<CategoryResponse>> list(@AuthenticationPrincipal Jwt jwt, @PathVariable("shopId") long shopId) {
+        return ApiResponse.success(merchantCategoryService.list(Long.parseLong(jwt.getSubject()), shopId).stream()
+                .map(CategoryResponse::from).toList());
     }
 
     @PostMapping("/api/v1/merchant/shops/{shopId}/categories")
