@@ -121,6 +121,22 @@ class MerchantCategoryTest {
     }
 
     @Test
+    void createRejectsBlankCategoryName() {
+        BusinessException error = assertThrows(
+                BusinessException.class,
+                () -> categoryService.create(
+                        owner.getId(),
+                        ownerShop.getId(),
+                        "   ",
+                        1));
+
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
+        assertEquals(
+                0L,
+                productCategoryMapper.selectCount(null).longValue());
+    }
+
+    @Test
     void merchantCanPatchOwnCategory() throws Exception {
         ProductCategory category =
                 newCategory(ownerShop.getId(), "Old Name", 1, 1);
