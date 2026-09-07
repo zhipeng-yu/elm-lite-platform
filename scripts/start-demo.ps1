@@ -51,6 +51,8 @@ try {
         }
         New-Item -ItemType File (Join-Path $demoDir 'initialized') | Out-Null
     }
+    & python (Join-Path $repo 'scripts/seed-demo.py')
+    if ($LASTEXITCODE -ne 0) { throw 'Demo catalog import failed' }
     $env:DB_URL = 'jdbc:mysql://127.0.0.1:13317/elm_lite?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai'
     $env:DB_USERNAME = 'root'
     $env:DB_PASSWORD = ''

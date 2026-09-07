@@ -2,7 +2,7 @@
 
 ## 一条命令启动
 
-前提：已安装 JDK 21、Node.js 和 MySQL 8.4，`java`、`node`、`npm.cmd`、`mysql.exe`、`mysqld.exe` 在 PATH 中。首次使用 Maven Wrapper 或前端依赖安装需要网络。
+前提：已安装 JDK 21、Node.js、Python 3 和 MySQL 8.4，`java`、`node`、`npm.cmd`、`python`、`mysql.exe`、`mysqld.exe` 在 PATH 中。首次使用 Maven Wrapper 或前端依赖安装需要网络。
 
 在仓库根目录执行：
 
@@ -17,6 +17,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-demo.ps1
 - 独立演示 MySQL 使用本机空密码账号，只用于虚构演示数据，不用于生产或个人真实信息。使用现有数据库时按 README 配置环境变量，不运行此脚本。
 - 端口已占用时先停止旧演示；迁移失败时查看日志，不对已有数据库重复执行 V1/V2。版本迁移每个数据库只应用一次；种子 SQL 可重复导入。
 - 默认关闭 mock。用户和商家分别现场注册，密码自行设置；种子数据用于浏览和数据库结构展示，不依赖种子账号登录。
+- 每次启动通过 `scripts/seed-demo.py` 补充独立库至至少 30 家店铺，并按 `database/init/demo-catalog.json` 补充餐品。已有店铺、订单与手工修改的商品不删除、不重置库存；仅为空的店铺图片补充本地配图。新增店铺归属初始演示商家，已有店铺的商家归属不变。
+- 服务已运行时可单独执行 `python scripts/seed-demo.py`，然后点页面“刷新”。脚本限定本机 `13317` 和本仓库独立数据目录；重复执行不会重复添加同名餐品。手工新增店铺后总数可超过 30，不为凑数删店。
+- 首页的六类入口按店名和简介进行关键词搜索；可筛选营业店铺和免配送费，按配送费或起送价排序（营业店铺优先）。商品、价格和库存来自真实接口。
 
 ## 建议演示顺序（约 10 分钟）
 
