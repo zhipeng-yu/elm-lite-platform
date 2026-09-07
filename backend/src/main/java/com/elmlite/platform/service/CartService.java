@@ -6,6 +6,7 @@ import com.elmlite.platform.entity.Product;
 import com.elmlite.platform.exception.BusinessException;
 import com.elmlite.platform.mapper.CartItemMapper;
 import com.elmlite.platform.mapper.ProductMapper;
+import com.elmlite.platform.mapper.UserMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,14 +19,17 @@ public class CartService {
     private final CartItemMapper cartItemMapper;
     private final ProductMapper productMapper;
     private final UserService userService;
+    private final UserMapper userMapper;
 
     public CartService(
             CartItemMapper cartItemMapper,
             ProductMapper productMapper,
-            UserService userService) {
+            UserService userService,
+            UserMapper userMapper) {
         this.cartItemMapper = cartItemMapper;
         this.productMapper = productMapper;
         this.userService = userService;
+        this.userMapper = userMapper;
     }
 
     public List<CartItemResponse> list(long userId) {
@@ -46,6 +50,7 @@ public class CartService {
             Long productId,
             Integer quantity) {
 
+        userMapper.lockById(userId);
         userService.getCurrent(userId);
 
         validateQuantity(quantity);
@@ -63,7 +68,7 @@ public class CartService {
         CartItem existing = cartItemMapper.selectOne(
                 Wrappers.<CartItem>lambdaQuery()
                         .eq(CartItem::getUserId, userId)
-                        .eq(CartItem::getProductId, productId));
+                        .eq(CartItem::getProductId, productId).last("FOR UPDATE"));
 
         if (existing == null) {
             validateSingleShop(userId, product);
@@ -72,9 +77,10 @@ public class CartService {
         int targetQuantity = quantity;
 
         if (existing != null) {
-            targetQuantity = Math.addExact(
-                    existing.getQuantity(),
-                    quantity);
+            if (existing.getQuantity() > Integer.MAX_VALUE - quantity) {
+                throw new BusinessException(HttpStatus.BAD_REQUEST, "商品数量超出支持范围");
+            }
+            targetQuantity = existing.getQuantity() + quantity;
         }
 
         validateStock(product, targetQuantity);
@@ -101,6 +107,7 @@ public class CartService {
             long id,
             Integer quantity) {
 
+        userMapper.lockById(userId);
         userService.getCurrent(userId);
 
         validateQuantity(quantity);
@@ -130,6 +137,7 @@ public class CartService {
             long userId,
             long id) {
 
+        userMapper.lockById(userId);
         userService.getCurrent(userId);
 
         CartItem item = requireOwned(userId, id);
@@ -180,7 +188,8 @@ public class CartService {
             long userId,
             long id) {
 
-        CartItem item = cartItemMapper.selectById(id);
+        CartItem item = cartItemMapper.selectOne(
+                Wrappers.<CartItem>lambdaQuery().eq(CartItem::getId, id).last("FOR UPDATE"));
 
         if (item == null) {
             throw new BusinessException(
