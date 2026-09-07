@@ -6,7 +6,7 @@
 
 - [成员协作指南](CONTRIBUTING.md)：分工、PowerShell Git 步骤、PR、审核和冲突处理
 - [AI 协作规则](AGENTS.md)：AI 必须遵守的 TDD、架构和修改边界
-- [接口契约与登录鉴权方案](api-contract.md)：统一响应、最小用户接口和 JWT 约定
+- [接口契约与登录鉴权方案](api-contract.md)：统一响应、用户/商家、商品、地址、购物车、订单接口和 JWT 约定
 - [每日任务看板](handoff.md)：三人每日分工、完成状态、PR、阻塞和下一步
 - `Instruction Manual/26271学期-软件工程综合实践.md`：2026 年课程总要求
 
@@ -60,7 +60,7 @@ npm.cmd run dev
 
 真实联调前先启动后端；Vite 将 `/api` 转发到 `http://localhost:8080`。模拟页面验证时将 `VITE_USE_MOCK` 改为 `'true'` 并重启 Vite；未设置时开发模式默认启用模拟接口。切换模式后退出登录再重新登录，模拟 Token 无法用于真实后端；模拟账号、地址修改和登录会话只保存在内存，刷新后恢复初始数据并需要重新登录。新注册用户的模拟地址列表为空，演示地址只属于 `demo`。
 
-前端检查：`node --test tests/request.test.js tests/product-list.test.js` 验证 mock/真实 HTTP 分流、地址契约和分类切换请求顺序，`npm.cmd run build` 检查生产构建。PowerShell 使用 `npm.cmd` 可避免本机脚本执行策略拦截 `npm.ps1`。`npm.cmd run preview` 仅预览构建产物，部署时需由 Web 服务器配置 `/api` 转发。
+前端检查：`node --test tests/request.test.js tests/product-list.test.js tests/cart-order.test.js` 验证 mock/真实 HTTP 分流、地址契约、分类切换请求顺序及购物车/订单 mock 流程，`npm.cmd run build` 检查生产构建。上述自动化测试不代替关闭 mock 后的真实后端联调。PowerShell 使用 `npm.cmd` 可避免本机脚本执行策略拦截 `npm.ps1`。`npm.cmd run preview` 仅预览构建产物，部署时需由 Web 服务器配置 `/api` 转发。
 
 ## 基础功能
 

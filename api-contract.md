@@ -291,7 +291,7 @@ GET /api/v1/shops/{id}
 
 返回项至少包含 `id`、`productId`、`shopId`、`productName`、`imageUrl`、`priceCent`、`stock`、`status`、`quantity`、`subtotalCent`；不返回 `userId`。
 
-- 同用户重复加入同商品时累加数量，不新增重复记录；累加后仍须校验库存和 Java `Integer` 范围。
+- 同用户重复加入同商品时累加数量，不新增重复记录；累加后仍须校验库存和 Java `Integer` 范围，超出 `Integer.MAX_VALUE` 返回 400，原购物车数据保持不变。
 - `quantity` 必须为正整数，非法值返回 400；`PATCH quantity=0` 不代表删除。
 - 加入及修改数量时商品必须存在、上架且目标数量不超过实时库存；不存在返回 404，下架或库存不足返回 409。下单再次执行最终库存校验。
 - 一个用户购物车只允许同店铺商品；跨店加入返回 409，不自动清空原购物车。
