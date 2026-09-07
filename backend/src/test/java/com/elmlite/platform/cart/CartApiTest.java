@@ -349,6 +349,22 @@ class CartApiTest {
                         Integer.class));
     }
 
+    @Test
+    void rejectsAccumulatedQuantityOverflowWithoutChangingCart() throws Exception {
+        jdbc.update("UPDATE product SET stock = 2147483647 WHERE id = 1");
+        jdbc.update("UPDATE cart_item SET quantity = 2147483647 WHERE id = 1");
+
+        mvc.perform(post(URL).header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"productId":1,"quantity":1}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+        assertEquals(Integer.MAX_VALUE,
+                jdbc.queryForObject("SELECT quantity FROM cart_item WHERE id = 1", Integer.class));
+    }
+
     private String user(long id) {
         return "Bearer " + tokens.issue(id, AccountType.USER);
     }
