@@ -11,6 +11,23 @@ const source = (await readFile(new URL('../src/api/request.js', import.meta.url)
   .replaceAll('import.meta.env', 'env')
   .replace('export default service', 'globalThis.service = service')
 
+test('商家会话过期返回商家登录页，登录失败留在当前表单', async () => {
+  const pushes = []
+  const route = { path: '/merchant', fullPath: '/merchant' }
+  const context = vm.createContext({
+    axios, env: { DEV: true, VITE_USE_MOCK: 'false' },
+    ElMessage: { error() {} }, router: { currentRoute: { value: route }, push(value) { pushes.push(value) } },
+    getToken: () => null, removeToken() {}, setTimeout
+  })
+  vm.runInContext(source, context)
+  const adapter = (config) => Promise.reject({ config, response: { status: 401, data: { msg: '会话过期' } } })
+  await assert.rejects(context.service.get('/merchant/shops', { adapter }))
+  assert.equal(pushes[0].path, '/merchant/login')
+  route.path = '/merchant/login'
+  await assert.rejects(context.service.post('/merchant/auth/login', {}, { adapter }))
+  assert.equal(pushes.length, 1)
+})
+
 for (const useMock of ['true', 'false']) {
   test(`未模拟接口转发真实 HTTP，VITE_USE_MOCK=${useMock}`, async () => {
     const server = createServer((request, response) => {
