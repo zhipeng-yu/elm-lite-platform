@@ -38,7 +38,7 @@
           <el-button @click="router.push('/register')">去注册</el-button>
         </el-form-item>
       </el-form>
-      <p class="tip">开发期模拟账号：demo / 12345678（后端就绪后失效）</p>
+      <p class="tip"><router-link to="/merchant/login">我是商家，进入商家服务</router-link></p>
     </el-card>
   </div>
 </template>
@@ -67,6 +67,7 @@ const rules = {
 }
 
 async function handleSubmit() {
+  if (submitting.value) return
   errorMsg.value = ''
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) {
@@ -78,7 +79,7 @@ async function handleSubmit() {
     setToken(data.accessToken)
     ElMessage.success('登录成功')
     const redirect = router.currentRoute.value.query.redirect
-    router.push(typeof redirect === 'string' ? redirect : '/home')
+    router.push(typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//') && !redirect.startsWith('/merchant') ? redirect : '/home')
   } catch (error) {
     // 401 时拦截器统一提示“账号或密码错误”，这里保留页面内错误状态
     errorMsg.value = error.response?.data?.msg || '登录失败，请稍后重试'

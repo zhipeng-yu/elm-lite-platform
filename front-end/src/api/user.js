@@ -10,3 +10,6 @@ export function registerUser(data) {
 export function login(data) {
   return request.post('/auth/login', data)
 }
+
+export const getProfile = () => request.get('/users/me')
+export const updateProfile = (data) => request.patch('/users/me', data)

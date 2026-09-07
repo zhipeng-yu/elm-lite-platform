@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getToken, getAccountType } from '@/utils/auth'
 
 // 基础路由：登录/注册页独立，其余页面挂在 DefaultLayout 下。
 // 后续页面任务在自己的模块内追加，共享修改需先与龙确认。
 const routes = [
+  { path: '/merchant/login', component: () => import('@/views/auth/MerchantAuthView.vue') },
   { path: '/', redirect: '/home' },
   {
     path: '/login',
@@ -18,6 +20,8 @@ const routes = [
     path: '/',
     component: () => import('@/layouts/DefaultLayout.vue'),
     children: [
+      { path: 'profile', component: () => import('@/views/auth/ProfileView.vue'), meta: { accountType: 'USER' } },
+      { path: 'merchant', component: () => import('@/views/shop/MerchantDashboardView.vue'), meta: { accountType: 'MERCHANT' } },
       {
         path: 'home',
         name: 'home',
@@ -51,26 +55,31 @@ const routes = [
       {
         path: 'addresses',
         name: 'addresses',
+        meta: { accountType: 'USER' },
         component: () => import('@/views/address/AddressView.vue')
       },
       {
         path: 'cart',
         name: 'cart',
+        meta: { accountType: 'USER' },
         component: () => import('@/views/cart/CartView.vue')
       },
       {
         path: 'checkout',
         name: 'checkout',
+        meta: { accountType: 'USER' },
         component: () => import('@/views/order/CheckoutView.vue')
       },
       {
         path: 'orders',
         name: 'orders',
+        meta: { accountType: 'USER' },
         component: () => import('@/views/order/OrderListView.vue')
       },
       {
         path: 'orders/:id',
         name: 'order-detail',
+        meta: { accountType: 'USER' },
         component: () => import('@/views/order/OrderDetailView.vue')
       },
       {
@@ -88,3 +97,11 @@ const router = createRouter({
 })
 
 export default router
+
+router.beforeEach((to) => {
+  const type = to.meta.accountType
+  if (!type) return true
+  if (!getToken()) return { path: type === 'MERCHANT' ? '/merchant/login' : '/login', query: { redirect: to.fullPath } }
+  if (getAccountType() !== type) return getAccountType() === 'MERCHANT' ? '/merchant' : '/home'
+  return true
+})

@@ -13,6 +13,7 @@
         :title="errorMsg"
         class="error"
       />
+      <el-button v-if="errorMsg" :disabled="loading" @click="load">重新加载</el-button>
       <template v-else>
         <el-card class="panel">
           <template #header>
@@ -39,6 +40,7 @@
 
         <el-card class="panel">
           <template #header><span>商品清单</span></template>
+          <el-empty v-if="cartItems.length === 0" description="购物车暂无商品"><el-button @click="router.push('/shops')">去选购</el-button></el-empty>
           <ul class="item-list">
             <li v-for="item in cartItems" :key="item.id">
               <el-checkbox :model-value="selectedIds.includes(item.id)" @change="toggle(item.id)" />

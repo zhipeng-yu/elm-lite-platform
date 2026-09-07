@@ -1,10 +1,10 @@
 import { fileURLToPath, URL } from 'node:url'
 
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [vue()],
   resolve: {
     alias: {
@@ -16,9 +16,9 @@ export default defineConfig({
     proxy: {
       // 后端接口统一走 /api/v1，开发时转发到 Spring Boot
       '/api': {
-        target: 'http://localhost:8080',
+        target: loadEnv(mode, process.cwd(), '').API_PROXY_TARGET || 'http://localhost:8080',
         changeOrigin: true
       }
     }
   }
-})
+}))
