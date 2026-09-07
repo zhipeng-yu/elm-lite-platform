@@ -8,7 +8,6 @@ import com.elmlite.platform.mapper.ProductCategoryMapper;
 import com.elmlite.platform.mapper.ProductMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -72,41 +71,6 @@ public class ProductService {
         }
 
         return ProductDetailResponse.from(product, category);
-    }
-
-    @Transactional
-    public void validateAndDeduct(
-            long productId,
-            int quantity) {
-
-        if (quantity <= 0) {
-            throw new BusinessException(
-                    HttpStatus.BAD_REQUEST,
-                    "商品数量必须为正整数");
-        }
-
-        Product product = productMapper.selectById(productId);
-
-        if (product == null) {
-            throw new BusinessException(
-                    HttpStatus.NOT_FOUND,
-                    "商品不存在");
-        }
-
-        if (!Integer.valueOf(1).equals(product.getStatus())) {
-            throw new BusinessException(
-                    HttpStatus.CONFLICT,
-                    "商品已下架");
-        }
-
-        int affectedRows =
-                productMapper.deductStock(productId, quantity);
-
-        if (affectedRows == 0) {
-            throw new BusinessException(
-                    HttpStatus.CONFLICT,
-                    "库存不足");
-        }
     }
 
     public record CategoryResponse(
