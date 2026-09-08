@@ -24,12 +24,13 @@
 ## 当前阻塞
 
 - 真实 MySQL、关闭 mock 的 HTTP 流程和两种浏览器实际点击主流程均已验证；连接阻塞已解除。组内人工复核及课程要求的组间交叉验收仍待完成，详细证据见 [阶段一验证报告](docs/testing/stage1-report.md)。
-- 最终代码、测试断言及结果待余/梁/龙复核；PR #46 已合并 main，PR [#48](https://github.com/zhipeng-yu/elm-lite-platform/pull/48) 仍开放，尚未合入最新 main 验证。已有 316/316 后端结果属于阶段一功能分支，不能作为两者集成后的结果。本次只更新 PR，不合并。
+- 最终代码、测试断言及结果待余/梁/龙复核；PR #46 已合并 main，PR [#48](https://github.com/zhipeng-yu/elm-lite-platform/pull/48) 已合并。已有 316/316 后端结果属于合并前的阶段一功能分支，合并后的集成验证待完成。README 演示说明提交晚于 PR 合并，现已补入当前项目的 `docs/yu-demo-readme` 分支，尚未合入 main。
 
 ## AI 使用记录
 
 | 日期 | 用途 | 涉及文件 | 人工复核人 |
 | --- | --- | --- | --- |
+| 2026-09-08 | 按余要求将遗漏的 README 演示说明保留到当前项目，删除旧仓库目录，修正 PR 合并状态；后续使用当前工作区 | `readme.md`、`handoff.md`；旧目录 `D:/Project/ledu_project/elm-lite-platform` | 余已授权删除；文档待余复核，未重跑业务测试 |
 | 2026-09-08 | 核实 PR 状态及 Git 推送/拉取，清理过期进度，统一测试数量、验证范围与人工验收口径，补充 README 启动命令、网页入口、手机布局展示和停止方法，更新原 PR | `handoff.md`、`readme.md`、`docs/testing/stage1-report.md`、PR #48 描述 | 待余复核；本次为文档更新，未重跑业务测试 |
 | 2026-09-07 | 按余转述三人授权补齐阶段一管理查询与页面，保留红—绿提交，执行真实 MySQL/HTTP、回归与覆盖率检查，准备本地演示；按 grilling 确认范围后改蓝白首页/列表/导航、补 30 家店，执行手机和电脑点击；遵循 ponytail，不新增依赖 | 商家 Controller/Service 与测试、前端页面/API/认证/样式/测试、`scripts/`、演示餐品 JSON/本地图片、`docs/demo.md`、`docs/testing/stage1-report.md`、`api-contract.md`、`readme.md`、`handoff.md` | 待余/梁/龙复核；浏览器点击主流程已通过，人工验收未完成，未冒记人工结论 |
 | 2026-09-01 | 汇总课程要求并建立团队、Git 与 AI 协作规则 | `readme.md`、`AGENTS.md`、`handoff.md` | 待填写 |
