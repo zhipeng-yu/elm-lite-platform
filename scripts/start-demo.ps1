@@ -16,7 +16,11 @@ New-Item -ItemType Directory -Force $demoDir | Out-Null
 
 Push-Location (Join-Path $repo 'backend')
 try {
-    & .\mvnw.cmd verify *> (Join-Path $demoDir 'verify.log')
+    # Windows PowerShell 5.1 turns redirected native stderr into error records.
+    try {
+        $ErrorActionPreference = 'Continue'
+        & .\mvnw.cmd verify *> (Join-Path $demoDir 'verify.log')
+    } finally { $ErrorActionPreference = 'Stop' }
     if ($LASTEXITCODE -ne 0) { throw "Backend verification failed: $demoDir/verify.log" }
 } finally { Pop-Location }
 
@@ -27,7 +31,10 @@ if (!(Test-Path (Join-Path $repo 'front-end/node_modules/vite/bin/vite.js'))) {
 
 $dataDir = Join-Path $demoDir 'mysql'
 if (!(Test-Path $dataDir)) {
-    & $mysqld --no-defaults --initialize-insecure "--datadir=$dataDir" *> (Join-Path $demoDir 'mysql-init.log')
+    try {
+        $ErrorActionPreference = 'Continue'
+        & $mysqld --no-defaults --initialize-insecure "--datadir=$dataDir" *> (Join-Path $demoDir 'mysql-init.log')
+    } finally { $ErrorActionPreference = 'Stop' }
     if ($LASTEXITCODE -ne 0) { throw 'MySQL initialization failed; see mysql-init.log' }
 }
 
