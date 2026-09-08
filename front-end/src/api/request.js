@@ -15,7 +15,8 @@ const service = axios.create({
 service.interceptors.request.use(
   (config) => {
     const token = getToken()
-    if (token) {
+    const publicAuth = config.method === 'post' && ['/users', '/auth/login', '/merchants', '/merchant/auth/login'].includes(config.url)
+    if (token && !publicAuth) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
@@ -43,8 +44,9 @@ service.interceptors.response.use(
       removeToken()
       ElMessage.error(error.response?.data?.msg || '登录已过期，请重新登录')
       const current = router.currentRoute.value
-      if (current.path !== '/login') {
-        router.push({ path: '/login', query: { redirect: current.fullPath } })
+      const loginPath = current.path.startsWith('/merchant') ? '/merchant/login' : '/login'
+      if (current.path !== loginPath) {
+        router.push({ path: loginPath, query: { redirect: current.fullPath } })
       }
     } else if (error.code === 'ECONNABORTED') {
       ElMessage.error('请求超时，请稍后重试')
@@ -57,7 +59,7 @@ service.interceptors.response.use(
 
 // ---------- 开发期模拟接口（按冻结契约，D3 页面验证用） ----------
 // 只在 dev 模式生效，设置 VITE_USE_MOCK=false 可关闭；后端接口就绪后关闭即可联调真实接口。
-if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK !== 'false') {
+if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
   const realAdapter = service.defaults.adapter
 
   // D2 演示页用的模拟商家数据

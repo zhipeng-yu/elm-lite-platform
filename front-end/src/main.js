@@ -7,5 +7,6 @@ import App from './App.vue'
 import router from './router'
 
 import './assets/base.css'
+import './assets/workspace.css'
 
 createApp(App).use(router).use(ElementPlus).mount('#app')

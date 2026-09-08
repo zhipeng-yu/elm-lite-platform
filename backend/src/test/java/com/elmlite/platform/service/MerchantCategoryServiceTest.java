@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class MerchantCategoryServiceTest {
@@ -27,6 +29,28 @@ class MerchantCategoryServiceTest {
     @Mock private ShopMapper shopMapper;
     @Mock private ProductCategoryMapper categoryMapper;
     @InjectMocks private MerchantCategoryService categoryService;
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void invalidNameOrStatusCannotReachDatabaseWrite(boolean longName) {
+        Merchant merchant = new Merchant();
+        merchant.setStatus(1);
+        when(merchantMapper.selectById(1L)).thenReturn(merchant);
+        Shop shop = new Shop();
+        shop.setMerchantId(1L);
+        when(shopMapper.selectById(2L)).thenReturn(shop);
+        ProductCategory category = new ProductCategory();
+        category.setShopId(2L);
+        category.setCategoryName("Original");
+        when(categoryMapper.selectById(3L)).thenReturn(category);
+
+        BusinessException error = assertThrows(BusinessException.class, () ->
+                categoryService.update(1L, 3L, longName ? "x".repeat(51) : null, null, longName ? null : 2));
+
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
+        assertEquals("Original", category.getCategoryName());
+        verify(categoryMapper, never()).updateById(any(ProductCategory.class));
+    }
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})

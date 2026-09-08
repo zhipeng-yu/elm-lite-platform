@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 @Service
 public class MerchantProductService {
@@ -35,6 +37,12 @@ public class MerchantProductService {
         this.shopMapper = shopMapper;
         this.productCategoryMapper = productCategoryMapper;
         this.productMapper = productMapper;
+    }
+
+    public List<Product> list(long merchantId, long shopId) {
+        requireActiveMerchant(merchantId);
+        requireOwnedShop(merchantId, shopId);
+        return productMapper.selectList(new QueryWrapper<Product>().eq("shop_id", shopId).orderByAsc("id"));
     }
 
     @Transactional

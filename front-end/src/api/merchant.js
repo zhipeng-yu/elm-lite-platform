@@ -5,3 +5,15 @@ import request from './request'
 export function fetchMerchants(mode = 'list') {
   return request.get('/mock/merchants', { params: { mode } })
 }
+
+export const registerMerchant = (data) => request.post('/merchants', data)
+export const loginMerchant = (data) => request.post('/merchant/auth/login', data)
+export const listMyShops = () => request.get('/merchant/shops')
+export const createShop = (data) => request.post('/merchant/shops', data)
+export const setBusinessStatus = (id, businessStatus) => request.patch(`/merchant/shops/${id}`, { businessStatus })
+export const listManagedCategories = (id) => request.get(`/merchant/shops/${id}/categories`)
+export const listManagedProducts = (id) => request.get(`/merchant/shops/${id}/products`)
+export const createCategory = (id, data) => request.post(`/merchant/shops/${id}/categories`, data)
+export const updateCategory = (id, data) => request.patch(`/merchant/categories/${id}`, data)
+export const createProduct = (id, data) => request.post(`/merchant/shops/${id}/products`, data)
+export const updateProduct = (id, data) => request.patch(`/merchant/products/${id}`, data)

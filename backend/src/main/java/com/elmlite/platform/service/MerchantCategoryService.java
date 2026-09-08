@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 @Service
 public class MerchantCategoryService {
@@ -28,6 +30,12 @@ public class MerchantCategoryService {
         this.merchantMapper = merchantMapper;
         this.shopMapper = shopMapper;
         this.productCategoryMapper = productCategoryMapper;
+    }
+
+    public List<ProductCategory> list(long merchantId, long shopId) {
+        requireActiveMerchant(merchantId);
+        requireOwnedShop(merchantId, shopId);
+        return productCategoryMapper.selectList(new QueryWrapper<ProductCategory>().eq("shop_id", shopId).orderByAsc("sort_order", "id"));
     }
 
     @Transactional
