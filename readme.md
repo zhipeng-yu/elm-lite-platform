@@ -14,6 +14,30 @@
 
 四份 2021 年 PDF 仅用于参考页面、业务流程和表结构。除非老师明确要求，默认只开发一套最终的前后端分离项目。
 
+## 打开网页做演示（Windows）
+
+先安装 JDK 21、Node.js、Python 3 和 MySQL 8.4，并确保 `java`、`node`、`npm.cmd`、`python`、`mysql.exe`、`mysqld.exe` 可在终端运行。首次下载 Maven 和前端依赖需要网络。
+
+1. 用 VS Code 打开项目文件夹，选择“终端 → 新建终端”，在**仓库根目录**（能看到 `scripts`、`backend`、`front-end`）执行：
+
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\start-demo.ps1
+   ```
+
+2. 等待终端显示 `Demo ready: http://127.0.0.1:5180`。脚本会先执行后端测试，再准备独立数据库、至少 30 家店铺及餐品，最后启动前后端；无需另外手动启动数据库或运行 `npm run dev`。
+3. 在本机 Edge 或 Chrome 地址栏输入 **<http://127.0.0.1:5180/home>**。保持启动终端运行，不要在演示过程中按 Enter。
+4. 演示结束，回到启动终端，按 **Enter** 停止服务。下次执行同一命令即可；数据保留，重启后需要重新登录。
+
+| 演示入口 | 地址与用法 |
+| --- | --- |
+| 首页与店铺浏览 | <http://127.0.0.1:5180/home>；无需登录，可搜索店铺、筛选及排序 |
+| 用户注册与登录 | <http://127.0.0.1:5180/register> / <http://127.0.0.1:5180/login>；自行注册演示账号，再展示地址、购物车和下单 |
+| 商家入口 | <http://127.0.0.1:5180/merchant/login>；可切换注册，登录后进入工作台，创建店铺、分类和商品 |
+
+电脑端直接展示完整窗口；展示手机布局时，在 Edge/Chrome 按 `F12`，再按 `Ctrl+Shift+M` 切换设备模拟，设置约 `390 × 844`。当前服务只监听本机，手机设备模拟在电脑浏览器中进行；实体手机不能通过该 `127.0.0.1` 地址访问电脑服务。
+
+打不开页面时，先确认终端已显示 `Demo ready` 且仍在运行；服务已运行就直接打开网址，不要重复启动。若提示端口占用，先回到原启动终端按 Enter 停止；若启动失败，查看 `backend/target/local-demo/` 中的 `verify.log`、`backend.log`、`frontend.log` 及对应错误日志。详细操作顺序见 [本地演示指南](docs/demo.md)。
+
 ## 技术栈
 
 - 后端：JDK 21、Spring Boot 3.5.16、Maven 3.9.16、MyBatis-Plus 3.5.17
