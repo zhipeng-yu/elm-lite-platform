@@ -85,6 +85,7 @@ public class MerchantProductController {
                         request.productName(),
                         request.description(),
                         request.imageUrl(),
+                        request.detailImageUrls(),
                         request.priceCent(),
                         request.stock(),
                         request.status());
@@ -151,6 +152,11 @@ public class MerchantProductController {
                     max = 255,
                     message = "图片地址不能超过255个字符")
             String imageUrl,
+
+            @Size(
+                    max = 3,
+                    message = "商品详情图不能超过3张")
+            List<String> detailImageUrls,
 
             @Min(
                     value = 1,
