@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @TableName("product")
 public class Product {
@@ -43,6 +45,9 @@ public class Product {
 
     @TableField("updated_at")
     private LocalDateTime updatedAt;
+
+    @TableField(exist = false)
+    private List<String> detailImageUrls = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -130,5 +135,15 @@ public class Product {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public List<String> getDetailImageUrls() {
+        return detailImageUrls;
+    }
+
+    public void setDetailImageUrls(List<String> detailImageUrls) {
+        this.detailImageUrls = detailImageUrls == null
+                ? new ArrayList<>()
+                : new ArrayList<>(detailImageUrls);
     }
 }
