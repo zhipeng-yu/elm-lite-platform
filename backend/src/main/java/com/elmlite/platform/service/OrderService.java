@@ -147,12 +147,7 @@ public class OrderService {
         }
         List<Item> lines = items.selectList(Wrappers.<OrderItem>lambdaQuery().eq(OrderItem::getOrderId, id)
                 .orderByAsc(OrderItem::getId)).stream().map(Item::from).toList();
-        return new Detail(order.getId(), order.getOrderNo(), order.getShopId(), order.getOrderStatus(),
-                order.getTotalAmount().movePointRight(2).longValueExact(),
-                order.getCreatedAt().atOffset(ZoneOffset.ofHours(8)), order.getReceiverName(),
-                order.getReceiverPhone(), order.getDeliveryAddress(),
-                order.getProductAmount().movePointRight(2).longValueExact(),
-                order.getDeliveryFee().movePointRight(2).longValueExact(), order.getRemark(), lines);
+        return Detail.from(order, lines);
     }
 
     public record Summary(Long id, String orderNo, Long shopId, Integer orderStatus,
@@ -166,7 +161,16 @@ public class OrderService {
 
     public record Detail(Long id, String orderNo, Long shopId, Integer orderStatus, Long totalAmountCent,
                          OffsetDateTime createdAt, String receiverName, String receiverPhone, String deliveryAddress,
-                         Long productAmountCent, Long deliveryFeeCent, String remark, List<Item> items) { }
+                         Long productAmountCent, Long deliveryFeeCent, String remark, List<Item> items) {
+        static Detail from(Order order, List<Item> lines) {
+            return new Detail(order.getId(), order.getOrderNo(), order.getShopId(), order.getOrderStatus(),
+                    order.getTotalAmount().movePointRight(2).longValueExact(),
+                    order.getCreatedAt().atOffset(ZoneOffset.ofHours(8)), order.getReceiverName(),
+                    order.getReceiverPhone(), order.getDeliveryAddress(),
+                    order.getProductAmount().movePointRight(2).longValueExact(),
+                    order.getDeliveryFee().movePointRight(2).longValueExact(), order.getRemark(), lines);
+        }
+    }
 
     public record Item(Long productId, String productName, Long unitPriceCent, Integer quantity, Long subtotalCent) {
         static Item from(OrderItem item) {
