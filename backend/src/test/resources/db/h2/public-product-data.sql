@@ -19,3 +19,9 @@ INSERT INTO product (
 
     (3, 1, 1, 'Hidden Product',
      'Off shelf product', NULL, 10.00, 20, 0);
+
+INSERT INTO product_detail_image (
+    id, product_id, image_url, sort_order
+) VALUES
+    (1, 1, 'https://example.com/beef-detail-2.jpg', 1),
+    (2, 1, '/images/products/beef-detail-1.jpg', 0);

@@ -25,68 +25,114 @@ class PublicProductTest {
     private MockMvc mockMvc;
 
     @Test
-    void anonymousCategoryListReturnsOnlyEnabledCategories() throws Exception {
+    void anonymousCategoryListReturnsOnlyEnabledCategories()
+            throws Exception {
+
         mockMvc.perform(get("/api/v1/shops/1/categories"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].categoryName").value("Main Food"))
+                .andExpect(jsonPath("$.data[0].categoryName")
+                        .value("Main Food"))
                 .andExpect(jsonPath("$.data[0].sortOrder").value(1))
                 .andExpect(jsonPath("$.data[1].id").value(2));
     }
 
     @Test
-    void anonymousProductListReturnsOnlyOnSaleProductsAndIntegerCents() throws Exception {
+    void anonymousProductListReturnsOnlyOnSaleProductsAndIntegerCents()
+            throws Exception {
+
         mockMvc.perform(get("/api/v1/shops/1/products"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].productName").value("Beef Rice"))
+                .andExpect(jsonPath("$.data[0].productName")
+                        .value("Beef Rice"))
                 .andExpect(jsonPath("$.data[0].priceCent").value(1800))
                 .andExpect(jsonPath("$.data[0].stock").value(100))
                 .andExpect(jsonPath("$.data[0].status").value(1))
-                .andExpect(jsonPath("$.data[0].categoryName").doesNotExist())
+                .andExpect(jsonPath("$.data[0].categoryName")
+                        .doesNotExist())
                 .andExpect(jsonPath("$.data[1].id").value(2))
                 .andExpect(jsonPath("$.data[1].priceCent").value(650))
                 .andExpect(jsonPath("$.data[1].stock").value(0));
     }
 
     @Test
-    void productListCanFilterByCategoryId() throws Exception {
-        mockMvc.perform(get("/api/v1/shops/1/products")
-                        .param("categoryId", "2"))
+    void productListCanFilterByCategoryId()
+            throws Exception {
+
+        mockMvc.perform(
+                        get("/api/v1/shops/1/products")
+                                .param("categoryId", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].id").value(2))
-                .andExpect(jsonPath("$.data[0].categoryId").value(2));
+                .andExpect(jsonPath("$.data[0].categoryId")
+                        .value(2));
     }
 
     @Test
-    void anonymousProductDetailReturnsCategoryNameAndExactCents() throws Exception {
+    void anonymousProductDetailReturnsCategoryNameExactCentsAndDetailImages()
+            throws Exception {
+
         mockMvc.perform(get("/api/v1/products/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.shopId").value(1))
                 .andExpect(jsonPath("$.data.categoryId").value(1))
-                .andExpect(jsonPath("$.data.categoryName").value("Main Food"))
-                .andExpect(jsonPath("$.data.productName").value("Beef Rice"))
+                .andExpect(jsonPath("$.data.categoryName")
+                        .value("Main Food"))
+                .andExpect(jsonPath("$.data.productName")
+                        .value("Beef Rice"))
                 .andExpect(jsonPath("$.data.priceCent").value(1800))
                 .andExpect(jsonPath("$.data.stock").value(100))
-                .andExpect(jsonPath("$.data.status").value(1));
+                .andExpect(jsonPath("$.data.status").value(1))
+                .andExpect(jsonPath(
+                        "$.data.detailImageUrls.length()")
+                        .value(2))
+                .andExpect(jsonPath(
+                        "$.data.detailImageUrls[0]")
+                        .value(
+                                "/images/products/beef-detail-1.jpg"))
+                .andExpect(jsonPath(
+                        "$.data.detailImageUrls[1]")
+                        .value(
+                                "https://example.com/beef-detail-2.jpg"));
     }
 
     @Test
-    void offShelfProductDetailReturnsNotFound() throws Exception {
+    void productWithoutDetailImagesReturnsEmptyArray()
+            throws Exception {
+
+        mockMvc.perform(get("/api/v1/products/2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.id").value(2))
+                .andExpect(jsonPath(
+                        "$.data.detailImageUrls")
+                        .isArray())
+                .andExpect(jsonPath(
+                        "$.data.detailImageUrls.length()")
+                        .value(0));
+    }
+
+    @Test
+    void offShelfProductDetailReturnsNotFound()
+            throws Exception {
+
         mockMvc.perform(get("/api/v1/products/3"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(404));
     }
 
     @Test
-    void missingProductReturnsUnifiedNotFound() throws Exception {
+    void missingProductReturnsUnifiedNotFound()
+            throws Exception {
+
         mockMvc.perform(get("/api/v1/products/999999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value(404));
