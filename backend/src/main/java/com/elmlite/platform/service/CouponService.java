@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 public class CouponService {
 
@@ -43,6 +45,8 @@ public class CouponService {
                     "优惠券不存在");
         }
 
+        validateClaimable(coupon);
+
         UserCoupon existing =
                 userCouponMapper.selectOne(
                         Wrappers.<UserCoupon>lambdaQuery()
@@ -73,5 +77,33 @@ public class CouponService {
         }
 
         return userCoupon;
+    }
+
+    private void validateClaimable(Coupon coupon) {
+        LocalDateTime now = LocalDateTime.now();
+
+        if (!Integer.valueOf(1).equals(
+                coupon.getEnabled())) {
+
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券已停用");
+        }
+
+        if (coupon.getStartsAt() == null
+                || now.isBefore(coupon.getStartsAt())) {
+
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券尚未开始");
+        }
+
+        if (coupon.getExpiresAt() == null
+                || !now.isBefore(coupon.getExpiresAt())) {
+
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券已过期");
+        }
     }
 }
