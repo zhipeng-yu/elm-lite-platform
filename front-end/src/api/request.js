@@ -15,7 +15,7 @@ const service = axios.create({
 service.interceptors.request.use(
   (config) => {
     const token = getToken()
-    const publicAuth = config.method === 'post' && ['/users', '/auth/login', '/merchants', '/merchant/auth/login'].includes(config.url)
+    const publicAuth = config.method === 'post' && ['/users', '/auth/login', '/merchants', '/merchant/auth/login', '/admin/auth/login'].includes(config.url)
     if (token && !publicAuth) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -44,7 +44,11 @@ service.interceptors.response.use(
       removeToken()
       ElMessage.error(error.response?.data?.msg || '登录已过期，请重新登录')
       const current = router.currentRoute.value
-      const loginPath = current.path.startsWith('/merchant') ? '/merchant/login' : '/login'
+      const loginPath = current.path.startsWith('/admin')
+        ? '/admin/login'
+        : current.path.startsWith('/merchant')
+          ? '/merchant/login'
+          : '/login'
       if (current.path !== loginPath) {
         router.push({ path: loginPath, query: { redirect: current.fullPath } })
       }
@@ -70,7 +74,8 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
 
   // D3 模拟用户与店铺，字段与 api-contract.md 冻结契约一致
   const MOCK_USERS = [
-    { id: 1, username: 'demo', password: '12345678', displayName: '演示用户' }
+    { id: 1, username: 'demo', password: '12345678', displayName: '演示用户', status: 1 },
+    { id: 2, username: 'blocked_user', password: '12345678', displayName: '停用用户', status: 0 }
   ]
   const MOCK_SESSIONS = new Map()
   const MOCK_SHOPS = [
@@ -222,6 +227,35 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
   const MOCK_ORDERS = []
   let nextOrderId = 1
 
+  // 阶段二：管理员与商家账号模拟，字段与 api-contract.md 第 9.5 节冻结契约一致
+  const MOCK_ADMINS = [
+    { id: 1, username: 'admin', password: 'admin123456', status: 1 }
+  ]
+  const MOCK_MERCHANT_ACCOUNTS = [
+    { id: 1, account: 'merchant_a', merchantName: '商家甲', contactName: '甲联系人', status: 1 },
+    { id: 2, account: 'merchant_b', merchantName: '商家乙', contactName: '乙联系人', status: 0 }
+  ]
+  MOCK_ORDERS.push({
+    id: 900,
+    userId: 999,
+    orderNo: 'ADMIN900000001',
+    shopId: 1,
+    orderStatus: 2,
+    totalAmountCent: 3900,
+    createdAt: '2026-09-11T10:00:00+08:00',
+    detail: {
+      receiverName: '示例用户',
+      receiverPhone: '19900000001',
+      deliveryAddress: '测试校区1号宿舍楼',
+      productAmountCent: 3600,
+      deliveryFeeCent: 300,
+      remark: '演示订单',
+      items: [
+        { productId: 1, productName: '牛肉盖饭', unitPriceCent: 1800, quantity: 2, subtotalCent: 3600 }
+      ]
+    }
+  })
+
   const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
   const ok = (config, data, status = 200) => ({
@@ -293,6 +327,9 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
     const session = MOCK_SESSIONS.get(token)
     if (!session || session.expiresAt <= Date.now()) {
       throw fail(config, 401, '未登录或登录已过期，请重新登录')
+    }
+    if (session.accountType !== 'USER') {
+      throw fail(config, 403, '无权操作')
     }
     return session
   }
@@ -376,7 +413,11 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
         return Promise.reject(fail(config, 401, '账号或密码错误'))
       }
       const accessToken = `mock-jwt-${found.id}-${Date.now()}`
-      MOCK_SESSIONS.set(accessToken, { userId: found.id, expiresAt: Date.now() + 3600_000 })
+      MOCK_SESSIONS.set(accessToken, {
+        userId: found.id,
+        accountType: 'USER',
+        expiresAt: Date.now() + 3600_000
+      })
       return ok(config, {
         accessToken,
         expiresIn: 3600,
@@ -465,6 +506,9 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
       const session = MOCK_SESSIONS.get(token)
       if (!session || session.expiresAt <= Date.now()) {
         throw fail(config, 401, '未登录或登录已过期，请重新登录')
+      }
+      if (session.accountType !== 'USER') {
+        throw fail(config, 403, '无权操作')
       }
       const userId = session.userId
       let item
@@ -647,6 +691,163 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
         }
         MOCK_ORDERS.push(order)
         return ok(config, orderView(order), 201)
+      }
+    }
+
+    // ---------- 阶段二：管理员接口（会话和身份均为 ADMIN） ----------
+    if (method === 'post' && url === '/admin/auth/login') {
+      await wait(600)
+      const body = parseBody(config)
+      const found = MOCK_ADMINS.find(
+        (a) => a.username === body.username && a.password === body.password
+      )
+      if (!found) {
+        return Promise.reject(fail(config, 401, '账号或密码错误'))
+      }
+      if (found.status !== 1) {
+        return Promise.reject(fail(config, 403, '账号已禁用'))
+      }
+      const accessToken = `mock-admin-jwt-${found.id}-${Date.now()}`
+      MOCK_SESSIONS.set(accessToken, {
+        userId: found.id,
+        accountType: 'ADMIN',
+        expiresAt: Date.now() + 3600_000
+      })
+      return ok(config, {
+        accessToken,
+        expiresIn: 3600,
+        admin: { id: found.id, username: found.username }
+      })
+    }
+
+    if (url === '/admin/users' || url === '/admin/merchants' || url === '/admin/shops'
+        || url === '/admin/orders' || /^\/admin\/(users|merchants)\/\d+$/.test(url)
+        || /^\/admin\/orders\/\d+$/.test(url)) {
+      await wait(600)
+      const token = config.headers?.Authorization?.match(/^Bearer (.+)$/)?.[1]
+      const session = MOCK_SESSIONS.get(token)
+      if (!session || session.expiresAt <= Date.now()) {
+        throw fail(config, 401, '未登录或登录已过期，请重新登录')
+      }
+      if (session.accountType !== 'ADMIN') {
+        throw fail(config, 403, '无权操作')
+      }
+
+      if (method === 'get' && url === '/admin/users') {
+        const keyword = config.params?.keyword?.trim()
+        let list = MOCK_USERS
+        if (config.params?.status != null) {
+          list = list.filter((u) => u.status === Number(config.params.status))
+        }
+        if (keyword) {
+          list = list.filter(
+            (u) => u.username.includes(keyword) || u.displayName.includes(keyword)
+          )
+        }
+        return ok(config, list.map((u) => ({
+          id: u.id,
+          username: u.username,
+          nickname: u.displayName,
+          status: u.status
+        })))
+      }
+
+      if (method === 'get' && url === '/admin/merchants') {
+        const keyword = config.params?.keyword?.trim()
+        let list = MOCK_MERCHANT_ACCOUNTS
+        if (config.params?.status != null) {
+          list = list.filter((m) => m.status === Number(config.params.status))
+        }
+        if (keyword) {
+          list = list.filter(
+            (m) => m.account.includes(keyword) || m.merchantName.includes(keyword)
+          )
+        }
+        return ok(config, list.map((m) => ({
+          id: m.id,
+          account: m.account,
+          merchantName: m.merchantName,
+          contactName: m.contactName,
+          status: m.status
+        })))
+      }
+
+      if (method === 'get' && url === '/admin/shops') {
+        return ok(config, MOCK_SHOPS.map((s) => ({
+          id: s.id,
+          merchantId: 1,
+          shopName: s.shopName,
+          businessStatus: s.businessStatus
+        })))
+      }
+
+      if (method === 'get' && url === '/admin/orders') {
+        const { shopId, orderStatus } = config.params || {}
+        if (orderStatus != null && !/^[0-5]$/.test(String(orderStatus))) {
+          throw fail(config, 400, '订单状态必须为 0-5 的整数')
+        }
+        let list = MOCK_ORDERS
+        if (shopId != null) list = list.filter((o) => o.shopId === Number(shopId))
+        if (orderStatus != null) list = list.filter((o) => o.orderStatus === Number(orderStatus))
+        return ok(config, list
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id)
+          .map((o) => ({
+            id: o.id,
+            orderNo: o.orderNo,
+            userId: o.userId,
+            shopId: o.shopId,
+            orderStatus: o.orderStatus,
+            totalAmountCent: o.totalAmountCent,
+            createdAt: o.createdAt
+          })))
+      }
+
+      if (method === 'get' && /^\/admin\/orders\/\d+$/.test(url)) {
+        const id = Number(url.split('/').pop())
+        const order = MOCK_ORDERS.find((o) => o.id === id)
+        if (!order) throw fail(config, 404, '订单不存在')
+        return ok(config, {
+          id: order.id,
+          orderNo: order.orderNo,
+          userId: order.userId,
+          shopId: order.shopId,
+          orderStatus: order.orderStatus,
+          productAmountCent: order.detail.productAmountCent,
+          deliveryFeeCent: order.detail.deliveryFeeCent,
+          totalAmountCent: order.totalAmountCent,
+          createdAt: order.createdAt,
+          receiverName: order.detail.receiverName,
+          receiverPhone: order.detail.receiverPhone,
+          deliveryAddress: order.detail.deliveryAddress,
+          remark: order.detail.remark,
+          items: order.detail.items
+        })
+      }
+
+      if (method === 'patch' && /^\/admin\/users\/\d+$/.test(url)) {
+        const body = parseBody(config)
+        if (body.status !== 0 && body.status !== 1) throw fail(config, 400, '状态必须为 0 或 1')
+        const id = Number(url.split('/').pop())
+        const user = MOCK_USERS.find((u) => u.id === id)
+        if (!user) throw fail(config, 404, '用户不存在')
+        user.status = body.status
+        return ok(config, { id: user.id, username: user.username, nickname: user.displayName, status: user.status })
+      }
+
+      if (method === 'patch' && /^\/admin\/merchants\/\d+$/.test(url)) {
+        const body = parseBody(config)
+        if (body.status !== 0 && body.status !== 1) throw fail(config, 400, '状态必须为 0 或 1')
+        const id = Number(url.split('/').pop())
+        const merchant = MOCK_MERCHANT_ACCOUNTS.find((m) => m.id === id)
+        if (!merchant) throw fail(config, 404, '商家不存在')
+        merchant.status = body.status
+        return ok(config, {
+          id: merchant.id,
+          account: merchant.account,
+          merchantName: merchant.merchantName,
+          contactName: merchant.contactName,
+          status: merchant.status
+        })
       }
     }
 
