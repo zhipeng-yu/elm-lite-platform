@@ -1,5 +1,6 @@
 package com.elmlite.platform.coupon;
 
+import com.elmlite.platform.entity.Coupon;
 import com.elmlite.platform.entity.Merchant;
 import com.elmlite.platform.entity.Shop;
 import com.elmlite.platform.mapper.CouponMapper;
@@ -17,8 +18,10 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -208,6 +211,66 @@ class MerchantCouponTest {
         assertEquals(0L, couponMapper.selectCount(null));
     }
 
+    @Test
+    void merchantCanDisableOwnCoupon() throws Exception {
+        Coupon coupon = newCoupon(ownerShop.getId(), 1);
+
+        mockMvc.perform(
+                        patch("/api/v1/merchant/coupons/"
+                                + coupon.getId())
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "enabled": false
+                                        }
+                                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.id")
+                        .value(coupon.getId()))
+                .andExpect(jsonPath("$.data.enabled")
+                        .value(false));
+
+        assertEquals(
+                Integer.valueOf(0),
+                couponMapper
+                        .selectById(coupon.getId())
+                        .getEnabled());
+    }
+
+    @Test
+    void merchantCanEnableOwnCoupon() throws Exception {
+        Coupon coupon = newCoupon(ownerShop.getId(), 0);
+
+        mockMvc.perform(
+                        patch("/api/v1/merchant/coupons/"
+                                + coupon.getId())
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "enabled": true
+                                        }
+                                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.id")
+                        .value(coupon.getId()))
+                .andExpect(jsonPath("$.data.enabled")
+                        .value(true));
+
+        assertEquals(
+                Integer.valueOf(1),
+                couponMapper
+                        .selectById(coupon.getId())
+                        .getEnabled());
+    }
+
     private String validBody() {
         return """
                 {
@@ -242,5 +305,36 @@ class MerchantCouponTest {
         shop.setBusinessStatus(1);
         shopMapper.insert(shop);
         return shop;
+    }
+
+    private Coupon newCoupon(
+            Long shopId,
+            int enabled) {
+
+        Coupon coupon = new Coupon();
+        coupon.setShopId(shopId);
+        coupon.setName("Existing Coupon");
+        coupon.setThresholdAmount(
+                new BigDecimal("20.00"));
+        coupon.setDiscountAmount(
+                new BigDecimal("5.00"));
+        coupon.setStartsAt(
+                LocalDateTime.of(
+                        2026,
+                        9,
+                        12,
+                        0,
+                        0));
+        coupon.setExpiresAt(
+                LocalDateTime.of(
+                        2026,
+                        9,
+                        30,
+                        0,
+                        0));
+        coupon.setEnabled(enabled);
+
+        couponMapper.insert(coupon);
+        return coupon;
     }
 }
