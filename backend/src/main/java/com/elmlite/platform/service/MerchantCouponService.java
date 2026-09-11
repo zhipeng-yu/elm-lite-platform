@@ -1,5 +1,6 @@
 package com.elmlite.platform.service;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.elmlite.platform.entity.Coupon;
 import com.elmlite.platform.entity.Merchant;
 import com.elmlite.platform.entity.Shop;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class MerchantCouponService {
@@ -29,6 +31,19 @@ public class MerchantCouponService {
         this.couponMapper = couponMapper;
         this.merchantMapper = merchantMapper;
         this.shopMapper = shopMapper;
+    }
+
+    public List<Coupon> list(
+            long merchantId,
+            long shopId) {
+
+        requireActiveMerchant(merchantId);
+        requireOwnedShop(merchantId, shopId);
+
+        return couponMapper.selectList(
+                Wrappers.<Coupon>lambdaQuery()
+                        .eq(Coupon::getShopId, shopId)
+                        .orderByAsc(Coupon::getId));
     }
 
     @Transactional
@@ -61,7 +76,6 @@ public class MerchantCouponService {
         coupon.setEnabled(1);
 
         couponMapper.insert(coupon);
-
         return coupon;
     }
 
@@ -73,7 +87,8 @@ public class MerchantCouponService {
 
         requireActiveMerchant(merchantId);
 
-        Coupon current = couponMapper.selectById(couponId);
+        Coupon current =
+                couponMapper.selectById(couponId);
 
         if (current == null) {
             throw new BusinessException(
@@ -101,7 +116,9 @@ public class MerchantCouponService {
         return couponMapper.selectById(couponId);
     }
 
-    private void requireActiveMerchant(long merchantId) {
+    private void requireActiveMerchant(
+            long merchantId) {
+
         Merchant merchant =
                 merchantMapper.selectById(merchantId);
 
@@ -146,16 +163,24 @@ public class MerchantCouponService {
         }
     }
 
-    private void validateThreshold(Long thresholdCent) {
-        if (thresholdCent == null || thresholdCent < 0) {
+    private void validateThreshold(
+            Long thresholdCent) {
+
+        if (thresholdCent == null
+                || thresholdCent < 0) {
+
             throw new BusinessException(
                     HttpStatus.BAD_REQUEST,
                     "优惠券门槛不能为负数");
         }
     }
 
-    private void validateDiscount(Long discountCent) {
-        if (discountCent == null || discountCent <= 0) {
+    private void validateDiscount(
+            Long discountCent) {
+
+        if (discountCent == null
+                || discountCent <= 0) {
+
             throw new BusinessException(
                     HttpStatus.BAD_REQUEST,
                     "优惠金额必须大于0");

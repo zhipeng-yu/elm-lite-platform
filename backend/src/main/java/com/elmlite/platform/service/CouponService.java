@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class CouponService {
@@ -30,6 +31,30 @@ public class CouponService {
         this.userService = userService;
     }
 
+    public List<Coupon> listClaimable(
+            long shopId) {
+
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        return couponMapper.selectList(
+                Wrappers.<Coupon>lambdaQuery()
+                        .eq(
+                                Coupon::getShopId,
+                                shopId)
+                        .eq(
+                                Coupon::getEnabled,
+                                1)
+                        .le(
+                                Coupon::getStartsAt,
+                                now)
+                        .gt(
+                                Coupon::getExpiresAt,
+                                now)
+                        .orderByAsc(
+                                Coupon::getId));
+    }
+
     @Transactional
     public UserCoupon claim(
             long userId,
@@ -37,7 +62,8 @@ public class CouponService {
 
         userService.getCurrent(userId);
 
-        Coupon coupon = couponMapper.selectById(couponId);
+        Coupon coupon =
+                couponMapper.selectById(couponId);
 
         if (coupon == null) {
             throw new BusinessException(
@@ -49,7 +75,8 @@ public class CouponService {
 
         UserCoupon existing =
                 userCouponMapper.selectOne(
-                        Wrappers.<UserCoupon>lambdaQuery()
+                        Wrappers
+                                .<UserCoupon>lambdaQuery()
                                 .eq(
                                         UserCoupon::getUserId,
                                         userId)
@@ -63,13 +90,16 @@ public class CouponService {
                     "该优惠券已领取");
         }
 
-        UserCoupon userCoupon = new UserCoupon();
+        UserCoupon userCoupon =
+                new UserCoupon();
+
         userCoupon.setUserId(userId);
         userCoupon.setCouponId(couponId);
         userCoupon.setStatus(0);
 
         try {
-            userCouponMapper.insert(userCoupon);
+            userCouponMapper.insert(
+                    userCoupon);
         } catch (DuplicateKeyException exception) {
             throw new BusinessException(
                     HttpStatus.CONFLICT,
@@ -79,11 +109,14 @@ public class CouponService {
         return userCoupon;
     }
 
-    private void validateClaimable(Coupon coupon) {
-        LocalDateTime now = LocalDateTime.now();
+    private void validateClaimable(
+            Coupon coupon) {
 
-        if (!Integer.valueOf(1).equals(
-                coupon.getEnabled())) {
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        if (!Integer.valueOf(1)
+                .equals(coupon.getEnabled())) {
 
             throw new BusinessException(
                     HttpStatus.CONFLICT,
@@ -91,7 +124,8 @@ public class CouponService {
         }
 
         if (coupon.getStartsAt() == null
-                || now.isBefore(coupon.getStartsAt())) {
+                || now.isBefore(
+                        coupon.getStartsAt())) {
 
             throw new BusinessException(
                     HttpStatus.CONFLICT,
@@ -99,7 +133,8 @@ public class CouponService {
         }
 
         if (coupon.getExpiresAt() == null
-                || !now.isBefore(coupon.getExpiresAt())) {
+                || !now.isBefore(
+                        coupon.getExpiresAt())) {
 
             throw new BusinessException(
                     HttpStatus.CONFLICT,
