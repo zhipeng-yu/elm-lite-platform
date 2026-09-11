@@ -79,8 +79,12 @@ class CouponClaimTest {
                 )
                 """);
 
-        Merchant merchant = newMerchant("claim_merchant");
-        shop = newShop(merchant.getId(), "Claim Shop");
+        Merchant merchant =
+                newMerchant("claim_merchant");
+
+        shop = newShop(
+                merchant.getId(),
+                "Claim Shop");
 
         userToken = jwtTokenService.issue(
                 1L,
@@ -89,7 +93,10 @@ class CouponClaimTest {
 
     @Test
     void userCanClaimCouponOnce() throws Exception {
-        Coupon coupon = newClaimableCoupon();
+        Coupon coupon = newCoupon(
+                1,
+                LocalDateTime.now().minusHours(1),
+                LocalDateTime.now().plusDays(1));
 
         mockMvc.perform(
                         post("/api/v1/coupons/"
@@ -103,16 +110,7 @@ class CouponClaimTest {
 
         assertEquals(
                 Integer.valueOf(1),
-                jdbc.queryForObject(
-                        """
-                        SELECT COUNT(*)
-                        FROM user_coupon
-                        WHERE user_id = ?
-                          AND coupon_id = ?
-                        """,
-                        Integer.class,
-                        1L,
-                        coupon.getId()));
+                claimCount(coupon.getId()));
 
         assertEquals(
                 Integer.valueOf(0),
@@ -129,8 +127,13 @@ class CouponClaimTest {
     }
 
     @Test
-    void duplicateClaimReturnsConflict() throws Exception {
-        Coupon coupon = newClaimableCoupon();
+    void duplicateClaimReturnsConflict()
+            throws Exception {
+
+        Coupon coupon = newCoupon(
+                1,
+                LocalDateTime.now().minusHours(1),
+                LocalDateTime.now().plusDays(1));
 
         mockMvc.perform(
                         post("/api/v1/coupons/"
@@ -153,19 +156,99 @@ class CouponClaimTest {
 
         assertEquals(
                 Integer.valueOf(1),
-                jdbc.queryForObject(
-                        """
-                        SELECT COUNT(*)
-                        FROM user_coupon
-                        WHERE user_id = ?
-                          AND coupon_id = ?
-                        """,
-                        Integer.class,
-                        1L,
-                        coupon.getId()));
+                claimCount(coupon.getId()));
     }
 
-    private Coupon newClaimableCoupon() {
+    @Test
+    void disabledCouponCannotBeClaimed()
+            throws Exception {
+
+        Coupon coupon = newCoupon(
+                0,
+                LocalDateTime.now().minusHours(1),
+                LocalDateTime.now().plusDays(1));
+
+        mockMvc.perform(
+                        post("/api/v1/coupons/"
+                                + coupon.getId()
+                                + "/claims")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + userToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409));
+
+        assertEquals(
+                Integer.valueOf(0),
+                claimCount(coupon.getId()));
+    }
+
+    @Test
+    void notStartedCouponCannotBeClaimed()
+            throws Exception {
+
+        Coupon coupon = newCoupon(
+                1,
+                LocalDateTime.now().plusHours(1),
+                LocalDateTime.now().plusDays(1));
+
+        mockMvc.perform(
+                        post("/api/v1/coupons/"
+                                + coupon.getId()
+                                + "/claims")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + userToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409));
+
+        assertEquals(
+                Integer.valueOf(0),
+                claimCount(coupon.getId()));
+    }
+
+    @Test
+    void expiredCouponCannotBeClaimed()
+            throws Exception {
+
+        Coupon coupon = newCoupon(
+                1,
+                LocalDateTime.now().minusDays(2),
+                LocalDateTime.now().minusHours(1));
+
+        mockMvc.perform(
+                        post("/api/v1/coupons/"
+                                + coupon.getId()
+                                + "/claims")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + userToken))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409));
+
+        assertEquals(
+                Integer.valueOf(0),
+                claimCount(coupon.getId()));
+    }
+
+    private Integer claimCount(Long couponId) {
+        return jdbc.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM user_coupon
+                WHERE user_id = ?
+                  AND coupon_id = ?
+                """,
+                Integer.class,
+                1L,
+                couponId);
+    }
+
+    private Coupon newCoupon(
+            int enabled,
+            LocalDateTime startsAt,
+            LocalDateTime expiresAt) {
+
         Coupon coupon = new Coupon();
         coupon.setShopId(shop.getId());
         coupon.setName("Claimable Coupon");
@@ -173,11 +256,9 @@ class CouponClaimTest {
                 new BigDecimal("20.00"));
         coupon.setDiscountAmount(
                 new BigDecimal("5.00"));
-        coupon.setStartsAt(
-                LocalDateTime.now().minusHours(1));
-        coupon.setExpiresAt(
-                LocalDateTime.now().plusDays(1));
-        coupon.setEnabled(1);
+        coupon.setStartsAt(startsAt);
+        coupon.setExpiresAt(expiresAt);
+        coupon.setEnabled(enabled);
 
         couponMapper.insert(coupon);
         return coupon;
@@ -186,23 +267,31 @@ class CouponClaimTest {
     private Merchant newMerchant(String account) {
         Merchant merchant = new Merchant();
         merchant.setAccount(account);
-        merchant.setPasswordHash("unused_test_hash");
-        merchant.setMerchantName("Coupon Merchant");
+        merchant.setPasswordHash(
+                "unused_test_hash");
+        merchant.setMerchantName(
+                "Coupon Merchant");
         merchant.setContactName("Tester");
-        merchant.setContactPhone("19900000003");
+        merchant.setContactPhone(
+                "19900000003");
         merchant.setStatus(1);
 
         merchantMapper.insert(merchant);
         return merchant;
     }
 
-    private Shop newShop(Long merchantId, String name) {
+    private Shop newShop(
+            Long merchantId,
+            String name) {
+
         Shop shop = new Shop();
         shop.setMerchantId(merchantId);
         shop.setShopName(name);
         shop.setAddress("Test Address");
-        shop.setStartPrice(new BigDecimal("0.00"));
-        shop.setDeliveryPrice(new BigDecimal("0.00"));
+        shop.setStartPrice(
+                new BigDecimal("0.00"));
+        shop.setDeliveryPrice(
+                new BigDecimal("0.00"));
         shop.setBusinessStatus(1);
 
         shopMapper.insert(shop);
