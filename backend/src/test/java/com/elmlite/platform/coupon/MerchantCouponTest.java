@@ -2,6 +2,7 @@ package com.elmlite.platform.coupon;
 
 import com.elmlite.platform.entity.Merchant;
 import com.elmlite.platform.entity.Shop;
+import com.elmlite.platform.mapper.CouponMapper;
 import com.elmlite.platform.mapper.MerchantMapper;
 import com.elmlite.platform.mapper.ShopMapper;
 import com.elmlite.platform.service.JwtTokenService;
@@ -17,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -41,15 +43,23 @@ class MerchantCouponTest {
     private ShopMapper shopMapper;
 
     @Autowired
+    private CouponMapper couponMapper;
+
+    @Autowired
     private JwtTokenService jwtTokenService;
 
     private Shop ownerShop;
+    private Shop otherShop;
     private String ownerToken;
 
     @BeforeEach
     void setUp() {
         Merchant owner = newMerchant("coupon_owner");
+        Merchant other = newMerchant("coupon_other");
+
         ownerShop = newShop(owner.getId(), "Coupon Shop");
+        otherShop = newShop(other.getId(), "Other Coupon Shop");
+
         ownerToken = jwtTokenService.issue(
                 owner.getId(),
                 JwtTokenService.AccountType.MERCHANT);
@@ -65,15 +75,7 @@ class MerchantCouponTest {
                                         "Authorization",
                                         "Bearer " + ownerToken)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                          "name": "Lunch Discount",
-                                          "thresholdCent": 2000,
-                                          "discountCent": 500,
-                                          "startsAt": "2026-09-12T00:00:00",
-                                          "expiresAt": "2026-09-30T00:00:00"
-                                        }
-                                        """))
+                                .content(validBody()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.id").isNumber())
@@ -89,7 +91,133 @@ class MerchantCouponTest {
                         .value("2026-09-12T00:00:00"))
                 .andExpect(jsonPath("$.data.expiresAt")
                         .value("2026-09-30T00:00:00"))
-                .andExpect(jsonPath("$.data.enabled").isBoolean());
+                .andExpect(jsonPath("$.data.enabled").value(true));
+    }
+
+    @Test
+    void merchantCannotCreateCouponForAnotherMerchantsShop()
+            throws Exception {
+
+        mockMvc.perform(
+                        post("/api/v1/merchant/shops/"
+                                + otherShop.getId()
+                                + "/coupons")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(validBody()))
+                .andExpect(status().isForbidden());
+
+        assertEquals(0L, couponMapper.selectCount(null));
+    }
+
+    @Test
+    void createRejectsBlankName() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/merchant/shops/"
+                                + ownerShop.getId()
+                                + "/coupons")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "name": "   ",
+                                          "thresholdCent": 2000,
+                                          "discountCent": 500,
+                                          "startsAt": "2026-09-12T00:00:00",
+                                          "expiresAt": "2026-09-30T00:00:00"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(0L, couponMapper.selectCount(null));
+    }
+
+    @Test
+    void createRejectsNegativeThreshold() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/merchant/shops/"
+                                + ownerShop.getId()
+                                + "/coupons")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "name": "Lunch Discount",
+                                          "thresholdCent": -1,
+                                          "discountCent": 500,
+                                          "startsAt": "2026-09-12T00:00:00",
+                                          "expiresAt": "2026-09-30T00:00:00"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(0L, couponMapper.selectCount(null));
+    }
+
+    @Test
+    void createRejectsNonPositiveDiscount() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/merchant/shops/"
+                                + ownerShop.getId()
+                                + "/coupons")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "name": "Lunch Discount",
+                                          "thresholdCent": 2000,
+                                          "discountCent": 0,
+                                          "startsAt": "2026-09-12T00:00:00",
+                                          "expiresAt": "2026-09-30T00:00:00"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(0L, couponMapper.selectCount(null));
+    }
+
+    @Test
+    void createRejectsInvalidTimeRange() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/merchant/shops/"
+                                + ownerShop.getId()
+                                + "/coupons")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "name": "Lunch Discount",
+                                          "thresholdCent": 2000,
+                                          "discountCent": 500,
+                                          "startsAt": "2026-09-30T00:00:00",
+                                          "expiresAt": "2026-09-30T00:00:00"
+                                        }
+                                        """))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(0L, couponMapper.selectCount(null));
+    }
+
+    private String validBody() {
+        return """
+                {
+                  "name": "Lunch Discount",
+                  "thresholdCent": 2000,
+                  "discountCent": 500,
+                  "startsAt": "2026-09-12T00:00:00",
+                  "expiresAt": "2026-09-30T00:00:00"
+                }
+                """;
     }
 
     private Merchant newMerchant(String account) {
