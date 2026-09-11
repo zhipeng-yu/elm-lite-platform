@@ -17,3 +17,9 @@ export const createCategory = (id, data) => request.post(`/merchant/shops/${id}/
 export const updateCategory = (id, data) => request.patch(`/merchant/categories/${id}`, data)
 export const createProduct = (id, data) => request.post(`/merchant/shops/${id}/products`, data)
 export const updateProduct = (id, data) => request.patch(`/merchant/products/${id}`, data)
+export const listMerchantOrders = (shopId, orderStatus) => request.get(`/merchant/shops/${shopId}/orders`, {
+  params: orderStatus === '' ? {} : { orderStatus }
+})
+export const fetchMerchantOrder = (id) => request.get(`/merchant/orders/${id}`)
+export const confirmMerchantOrder = (id) => request.post(`/merchant/orders/${id}/confirm`)
+export const prepareMerchantOrder = (id) => request.post(`/merchant/orders/${id}/prepare`)

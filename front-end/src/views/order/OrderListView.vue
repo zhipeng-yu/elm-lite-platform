@@ -26,6 +26,8 @@
             <span class="total">¥{{ formatPriceCent(order.totalAmountCent) }}</span>
           </div>
           <p class="time">{{ order.createdAt }}</p>
+          <el-button v-if="order.orderStatus === 0" type="danger" plain size="small"
+            :loading="cancelling === order.id" @click.stop="cancel(order)">取消订单</el-button>
         </li>
       </ul>
     </div>
@@ -36,7 +38,8 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { fetchOrders } from '@/api/order'
+import { cancelOrder, fetchOrders } from '@/api/order'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   formatPriceCent,
   ORDER_STATUS_TAG,
@@ -47,6 +50,7 @@ const router = useRouter()
 const loading = ref(false)
 const errorMsg = ref('')
 const orders = ref([])
+const cancelling = ref(null)
 
 function statusText(status) {
   return ORDER_STATUS_TEXT[status] || '未知'
@@ -71,6 +75,18 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+async function cancel(order) {
+  try {
+    await ElMessageBox.confirm('取消后将恢复商品库存，确定继续吗？', '取消订单', { type: 'warning' })
+    cancelling.value = order.id
+    const updated = await cancelOrder(order.id)
+    Object.assign(order, updated)
+    ElMessage.success('订单已取消')
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') errorMsg.value = error.response?.data?.msg || '取消失败，请刷新后重试'
+  } finally { cancelling.value = null }
 }
 
 onMounted(load)
