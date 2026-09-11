@@ -35,6 +35,7 @@ public class JwtTokenService {
 
     public enum AccountType {
         USER,
-        MERCHANT
+        MERCHANT,
+        ADMIN
     }
 }
