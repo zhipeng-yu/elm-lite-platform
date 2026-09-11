@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 })
 @AutoConfigureMockMvc(print = MockMvcPrint.NONE)
 @Sql(
-        scripts = "/db/h2/merchant-product-schema.sql",
+        scripts = "/db/h2/coupon-schema.sql",
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
 class MerchantCouponTest {
