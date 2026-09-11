@@ -17,3 +17,12 @@ export const createCategory = (id, data) => request.post(`/merchant/shops/${id}/
 export const updateCategory = (id, data) => request.patch(`/merchant/categories/${id}`, data)
 export const createProduct = (id, data) => request.post(`/merchant/shops/${id}/products`, data)
 export const updateProduct = (id, data) => request.patch(`/merchant/products/${id}`, data)
+
+export const listManagedCoupons = (shopId) =>
+  request.get(`/merchant/shops/${shopId}/coupons`)
+
+export const createCoupon = (shopId, data) =>
+  request.post(`/merchant/shops/${shopId}/coupons`, data)
+
+export const updateCouponEnabled = (couponId, enabled) =>
+  request.patch(`/merchant/coupons/${couponId}`, { enabled })

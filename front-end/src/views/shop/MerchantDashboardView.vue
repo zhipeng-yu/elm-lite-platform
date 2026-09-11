@@ -65,6 +65,7 @@ import { ElMessage } from 'element-plus'
 import * as api from '@/api/merchant'
 import { formatPriceCent } from '@/utils/format'
 import { productPayload } from '@/utils/merchant-form'
+import MerchantCouponPanel from './MerchantCouponPanel.vue'
 const shops = ref([]), shopId = ref(null), categories = ref([]), products = ref([])
 const loading = ref(false), detailLoading = ref(false), busy = ref(false), error = ref(''), formError = ref('')
 const dialogOpen = ref(false), kind = ref('shop'), editingId = ref(null), form = ref({})
