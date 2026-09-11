@@ -1,12 +1,15 @@
 package com.elmlite.platform.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.elmlite.platform.entity.Merchant;
 import com.elmlite.platform.entity.Product;
 import com.elmlite.platform.entity.ProductCategory;
+import com.elmlite.platform.entity.ProductDetailImage;
 import com.elmlite.platform.entity.Shop;
 import com.elmlite.platform.exception.BusinessException;
 import com.elmlite.platform.mapper.MerchantMapper;
 import com.elmlite.platform.mapper.ProductCategoryMapper;
+import com.elmlite.platform.mapper.ProductDetailImageMapper;
 import com.elmlite.platform.mapper.ProductMapper;
 import com.elmlite.platform.mapper.ShopMapper;
 import org.springframework.http.HttpStatus;
@@ -14,35 +17,52 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 
 @Service
 public class MerchantProductService {
 
     private static final long MAX_PRICE_CENT = 9_999_999_999L;
+    private static final int MAX_DETAIL_IMAGES = 3;
 
     private final MerchantMapper merchantMapper;
     private final ShopMapper shopMapper;
     private final ProductCategoryMapper productCategoryMapper;
     private final ProductMapper productMapper;
+    private final ProductDetailImageMapper productDetailImageMapper;
 
     public MerchantProductService(
             MerchantMapper merchantMapper,
             ShopMapper shopMapper,
             ProductCategoryMapper productCategoryMapper,
-            ProductMapper productMapper) {
+            ProductMapper productMapper,
+            ProductDetailImageMapper productDetailImageMapper) {
+
         this.merchantMapper = merchantMapper;
         this.shopMapper = shopMapper;
         this.productCategoryMapper = productCategoryMapper;
         this.productMapper = productMapper;
+        this.productDetailImageMapper = productDetailImageMapper;
     }
 
     public List<Product> list(long merchantId, long shopId) {
         requireActiveMerchant(merchantId);
         requireOwnedShop(merchantId, shopId);
-        return productMapper.selectList(new QueryWrapper<Product>().eq("shop_id", shopId).orderByAsc("id"));
+
+        List<Product> products =
+                productMapper.selectList(
+                        new QueryWrapper<Product>()
+                                .eq("shop_id", shopId)
+                                .orderByAsc("id"));
+
+        for (Product product : products) {
+            loadDetailImageUrls(product);
+        }
+
+        return products;
     }
 
     @Transactional
@@ -53,6 +73,7 @@ public class MerchantProductService {
             String productName,
             String description,
             String imageUrl,
+            List<String> detailImageUrls,
             Long priceCent,
             Integer stock) {
 
@@ -69,6 +90,7 @@ public class MerchantProductService {
         validateProductName(productName);
         validateDescription(description);
         validateImageUrl(imageUrl);
+        validateDetailImageUrls(detailImageUrls);
         validatePrice(priceCent);
         validateStock(stock);
 
@@ -84,6 +106,12 @@ public class MerchantProductService {
 
         productMapper.insert(product);
 
+        saveDetailImages(
+                product.getId(),
+                detailImageUrls);
+
+        loadDetailImageUrls(product);
+
         return product;
     }
 
@@ -95,6 +123,32 @@ public class MerchantProductService {
             String productName,
             String description,
             String imageUrl,
+            Long priceCent,
+            Integer stock,
+            Integer status) {
+
+        return update(
+                merchantId,
+                productId,
+                categoryId,
+                productName,
+                description,
+                imageUrl,
+                null,
+                priceCent,
+                stock,
+                status);
+    }
+
+    @Transactional
+    public Product update(
+            long merchantId,
+            long productId,
+            Long categoryId,
+            String productName,
+            String description,
+            String imageUrl,
+            List<String> detailImageUrls,
             Long priceCent,
             Integer stock,
             Integer status) {
@@ -114,7 +168,6 @@ public class MerchantProductService {
                         merchantId,
                         current.getShopId());
 
-        // 只写入本次请求字段，避免名称等修改覆盖并发下单已扣减的库存。
         Product product = new Product();
         product.setId(productId);
 
@@ -143,6 +196,10 @@ public class MerchantProductService {
             product.setImageUrl(imageUrl);
         }
 
+        if (detailImageUrls != null) {
+            validateDetailImageUrls(detailImageUrls);
+        }
+
         if (priceCent != null) {
             validatePrice(priceCent);
             product.setPrice(
@@ -167,7 +224,118 @@ public class MerchantProductService {
         product.setUpdatedAt(LocalDateTime.now());
         productMapper.updateById(product);
 
-        return productMapper.selectById(productId);
+        if (detailImageUrls != null) {
+            productDetailImageMapper.deleteByProductId(
+                    productId);
+
+            saveDetailImages(
+                    productId,
+                    detailImageUrls);
+        }
+
+        Product updated =
+                productMapper.selectById(productId);
+
+        loadDetailImageUrls(updated);
+
+        return updated;
+    }
+
+    private void saveDetailImages(
+            Long productId,
+            List<String> detailImageUrls) {
+
+        if (detailImageUrls == null
+                || detailImageUrls.isEmpty()) {
+            return;
+        }
+
+        for (int index = 0;
+             index < detailImageUrls.size();
+             index++) {
+
+            ProductDetailImage detailImage =
+                    new ProductDetailImage();
+
+            detailImage.setProductId(productId);
+            detailImage.setImageUrl(
+                    detailImageUrls.get(index));
+            detailImage.setSortOrder(index);
+
+            productDetailImageMapper.insert(detailImage);
+        }
+    }
+
+    private void loadDetailImageUrls(Product product) {
+        if (product == null || product.getId() == null) {
+            return;
+        }
+
+        List<ProductDetailImage> detailImages =
+                productDetailImageMapper.selectByProductId(
+                        product.getId());
+
+        List<String> detailImageUrls =
+                new ArrayList<>(detailImages.size());
+
+        for (ProductDetailImage detailImage : detailImages) {
+            detailImageUrls.add(
+                    detailImage.getImageUrl());
+        }
+
+        product.setDetailImageUrls(detailImageUrls);
+    }
+
+    private void validateDetailImageUrls(
+            List<String> detailImageUrls) {
+
+        if (detailImageUrls == null) {
+            return;
+        }
+
+        if (detailImageUrls.size() > MAX_DETAIL_IMAGES) {
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST,
+                    "商品详情图不能超过3张");
+        }
+
+        for (String detailImageUrl : detailImageUrls) {
+            validateDetailImageUrl(detailImageUrl);
+        }
+    }
+
+    private void validateDetailImageUrl(
+            String detailImageUrl) {
+
+        if (detailImageUrl == null
+                || detailImageUrl.isBlank()
+                || detailImageUrl.length() > 255) {
+
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST,
+                    "商品详情图片地址不合法");
+        }
+
+        if (detailImageUrl.startsWith("/images/")) {
+            return;
+        }
+
+        try {
+            URI uri = URI.create(detailImageUrl);
+
+            String scheme = uri.getScheme();
+
+            if (("http".equalsIgnoreCase(scheme)
+                    || "https".equalsIgnoreCase(scheme))
+                    && uri.getHost() != null) {
+                return;
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        throw new BusinessException(
+                HttpStatus.BAD_REQUEST,
+                "商品详情图片地址不合法");
     }
 
     private ProductCategory requireUsableCategory(

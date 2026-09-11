@@ -3,9 +3,12 @@ package com.elmlite.platform.service;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.elmlite.platform.entity.Product;
 import com.elmlite.platform.entity.ProductCategory;
+import com.elmlite.platform.entity.ProductDetailImage;
 import com.elmlite.platform.exception.BusinessException;
 import com.elmlite.platform.mapper.ProductCategoryMapper;
+import com.elmlite.platform.mapper.ProductDetailImageMapper;
 import com.elmlite.platform.mapper.ProductMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +19,26 @@ public class ProductService {
 
     private final ProductMapper productMapper;
     private final ProductCategoryMapper productCategoryMapper;
+    private final ProductDetailImageMapper productDetailImageMapper;
+
+    @Autowired
+    public ProductService(
+            ProductMapper productMapper,
+            ProductCategoryMapper productCategoryMapper,
+            ProductDetailImageMapper productDetailImageMapper) {
+
+        this.productMapper = productMapper;
+        this.productCategoryMapper = productCategoryMapper;
+        this.productDetailImageMapper = productDetailImageMapper;
+    }
 
     public ProductService(
             ProductMapper productMapper,
             ProductCategoryMapper productCategoryMapper) {
+
         this.productMapper = productMapper;
         this.productCategoryMapper = productCategoryMapper;
+        this.productDetailImageMapper = null;
     }
 
     public List<CategoryResponse> listCategories(long shopId) {
@@ -36,7 +53,10 @@ public class ProductService {
                 .toList();
     }
 
-    public List<ProductListResponse> listProducts(long shopId, Long categoryId) {
+    public List<ProductListResponse> listProducts(
+            long shopId,
+            Long categoryId) {
+
         var query = Wrappers.<Product>lambdaQuery()
                 .eq(Product::getShopId, shopId)
                 .eq(Product::getStatus, 1)
@@ -55,14 +75,18 @@ public class ProductService {
     public ProductDetailResponse getProduct(long id) {
         Product product = productMapper.selectById(id);
 
-        if (product == null || !Integer.valueOf(1).equals(product.getStatus())) {
+        if (product == null
+                || !Integer.valueOf(1)
+                .equals(product.getStatus())) {
+
             throw new BusinessException(
                     HttpStatus.NOT_FOUND,
                     "商品不存在");
         }
 
         ProductCategory category =
-                productCategoryMapper.selectById(product.getCategoryId());
+                productCategoryMapper.selectById(
+                        product.getCategoryId());
 
         if (category == null) {
             throw new BusinessException(
@@ -70,7 +94,19 @@ public class ProductService {
                     "商品分类不存在");
         }
 
-        return ProductDetailResponse.from(product, category);
+        List<String> detailImageUrls =
+                productDetailImageMapper == null
+                        ? List.of()
+                        : productDetailImageMapper
+                                .selectByProductId(product.getId())
+                                .stream()
+                                .map(ProductDetailImage::getImageUrl)
+                                .toList();
+
+        return ProductDetailResponse.from(
+                product,
+                category,
+                detailImageUrls);
     }
 
     public record CategoryResponse(
@@ -78,7 +114,9 @@ public class ProductService {
             String categoryName,
             Integer sortOrder) {
 
-        static CategoryResponse from(ProductCategory category) {
+        static CategoryResponse from(
+                ProductCategory category) {
+
             return new CategoryResponse(
                     category.getId(),
                     category.getCategoryName(),
@@ -119,13 +157,15 @@ public class ProductService {
             String productName,
             String description,
             String imageUrl,
+            List<String> detailImageUrls,
             Long priceCent,
             Integer stock,
             Integer status) {
 
         static ProductDetailResponse from(
                 Product product,
-                ProductCategory category) {
+                ProductCategory category,
+                List<String> detailImageUrls) {
 
             return new ProductDetailResponse(
                     product.getId(),
@@ -135,6 +175,7 @@ public class ProductService {
                     product.getProductName(),
                     product.getDescription(),
                     product.getImageUrl(),
+                    detailImageUrls,
                     product.getPrice()
                             .movePointRight(2)
                             .longValueExact(),

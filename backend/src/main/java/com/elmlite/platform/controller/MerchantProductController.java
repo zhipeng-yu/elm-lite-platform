@@ -13,13 +13,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import java.util.List;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 public class MerchantProductController {
@@ -32,9 +33,18 @@ public class MerchantProductController {
     }
 
     @GetMapping("/api/v1/merchant/shops/{shopId}/products")
-    public ApiResponse<List<ProductResponse>> list(@AuthenticationPrincipal Jwt jwt, @PathVariable("shopId") long shopId) {
-        return ApiResponse.success(merchantProductService.list(Long.parseLong(jwt.getSubject()), shopId).stream()
-                .map(ProductResponse::from).toList());
+    public ApiResponse<List<ProductResponse>> list(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("shopId") long shopId) {
+
+        return ApiResponse.success(
+                merchantProductService
+                        .list(
+                                Long.parseLong(jwt.getSubject()),
+                                shopId)
+                        .stream()
+                        .map(ProductResponse::from)
+                        .toList());
     }
 
     @PostMapping("/api/v1/merchant/shops/{shopId}/products")
@@ -51,6 +61,7 @@ public class MerchantProductController {
                         request.productName(),
                         request.description(),
                         request.imageUrl(),
+                        request.detailImageUrls(),
                         request.priceCent(),
                         request.stock());
 
@@ -74,6 +85,7 @@ public class MerchantProductController {
                         request.productName(),
                         request.description(),
                         request.imageUrl(),
+                        request.detailImageUrls(),
                         request.priceCent(),
                         request.stock(),
                         request.status());
@@ -101,6 +113,11 @@ public class MerchantProductController {
                     max = 255,
                     message = "图片地址不能超过255个字符")
             String imageUrl,
+
+            @Size(
+                    max = 3,
+                    message = "商品详情图不能超过3张")
+            List<String> detailImageUrls,
 
             @NotNull(message = "商品价格不能为空")
             @Min(
@@ -136,6 +153,11 @@ public class MerchantProductController {
                     message = "图片地址不能超过255个字符")
             String imageUrl,
 
+            @Size(
+                    max = 3,
+                    message = "商品详情图不能超过3张")
+            List<String> detailImageUrls,
+
             @Min(
                     value = 1,
                     message = "商品价格必须大于0")
@@ -165,6 +187,7 @@ public class MerchantProductController {
             String productName,
             String description,
             String imageUrl,
+            List<String> detailImageUrls,
             Long priceCent,
             Integer stock,
             Integer status) {
@@ -177,6 +200,7 @@ public class MerchantProductController {
                     product.getProductName(),
                     product.getDescription(),
                     product.getImageUrl(),
+                    product.getDetailImageUrls(),
                     product.getPrice()
                             .movePointRight(2)
                             .longValueExact(),

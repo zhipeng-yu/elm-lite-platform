@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -143,6 +144,61 @@ class MerchantProductTest {
                         .compareTo(saved.getPrice()));
         assertEquals(Integer.valueOf(100), saved.getStock());
         assertEquals(Integer.valueOf(1), saved.getStatus());
+    }
+
+    @Test
+    void merchantCanCreateProductWithDetailImages() throws Exception {
+        Map<String, Object> body = validBody();
+        body.put(
+                "detailImageUrls",
+                List.of(
+                        "https://example.com/detail-1.jpg",
+                        "/images/products/detail-2.jpg"));
+
+        mockMvc.perform(
+                        post("/api/v1/merchant/shops/"
+                                + ownerShop.getId()
+                                + "/products")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.detailImageUrls.length()")
+                        .value(2))
+                .andExpect(jsonPath("$.data.detailImageUrls[0]")
+                        .value("https://example.com/detail-1.jpg"))
+                .andExpect(jsonPath("$.data.detailImageUrls[1]")
+                        .value("/images/products/detail-2.jpg"));
+    }
+
+    @Test
+    void createRejectsMoreThanThreeDetailImages() throws Exception {
+        Map<String, Object> body = validBody();
+        body.put(
+                "detailImageUrls",
+                List.of(
+                        "https://example.com/detail-1.jpg",
+                        "https://example.com/detail-2.jpg",
+                        "https://example.com/detail-3.jpg",
+                        "https://example.com/detail-4.jpg"));
+
+        mockMvc.perform(
+                        post("/api/v1/merchant/shops/"
+                                + ownerShop.getId()
+                                + "/products")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + ownerToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isBadRequest());
+
+        assertEquals(
+                0L,
+                productMapper.selectCount(null).longValue());
     }
 
     @Test
