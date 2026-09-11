@@ -65,6 +65,42 @@ public class MerchantCouponService {
         return coupon;
     }
 
+    @Transactional
+    public Coupon updateEnabled(
+            long merchantId,
+            long couponId,
+            Boolean enabled) {
+
+        requireActiveMerchant(merchantId);
+
+        Coupon current = couponMapper.selectById(couponId);
+
+        if (current == null) {
+            throw new BusinessException(
+                    HttpStatus.NOT_FOUND,
+                    "优惠券不存在");
+        }
+
+        requireOwnedShop(
+                merchantId,
+                current.getShopId());
+
+        if (enabled == null) {
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST,
+                    "优惠券状态不能为空");
+        }
+
+        Coupon coupon = new Coupon();
+        coupon.setId(couponId);
+        coupon.setEnabled(enabled ? 1 : 0);
+        coupon.setUpdatedAt(LocalDateTime.now());
+
+        couponMapper.updateById(coupon);
+
+        return couponMapper.selectById(couponId);
+    }
+
     private void requireActiveMerchant(long merchantId) {
         Merchant merchant =
                 merchantMapper.selectById(merchantId);

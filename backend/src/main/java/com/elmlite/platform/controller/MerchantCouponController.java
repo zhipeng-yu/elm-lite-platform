@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -47,12 +48,32 @@ public class MerchantCouponController {
                         CouponResponse.from(coupon)));
     }
 
+    @PatchMapping("/api/v1/merchant/coupons/{id}")
+    public ApiResponse<CouponResponse> updateEnabled(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable("id") long id,
+            @RequestBody UpdateCouponRequest request) {
+
+        Coupon coupon =
+                merchantCouponService.updateEnabled(
+                        Long.parseLong(jwt.getSubject()),
+                        id,
+                        request.enabled());
+
+        return ApiResponse.success(
+                CouponResponse.from(coupon));
+    }
+
     public record CreateCouponRequest(
             String name,
             Long thresholdCent,
             Long discountCent,
             LocalDateTime startsAt,
             LocalDateTime expiresAt) {
+    }
+
+    public record UpdateCouponRequest(
+            Boolean enabled) {
     }
 
     public record CouponResponse(
