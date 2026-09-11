@@ -70,6 +70,27 @@ public class MerchantOrderService {
         return new Detail(OrderService.Detail.from(order, lines), new Buyer(buyer.getId(), buyer.getNickname()));
     }
 
+    @Transactional
+    public Detail confirm(long merchantId, long id) {
+        return changeStatus(merchantId, id, 0, 1);
+    }
+
+    @Transactional
+    public Detail prepare(long merchantId, long id) {
+        return changeStatus(merchantId, id, 1, 2);
+    }
+
+    private Detail changeStatus(long merchantId, long id, int expected, int next) {
+        requireActiveMerchant(merchantId);
+        Order order = orders.lockById(id);
+        if (order == null) throw new BusinessException(HttpStatus.NOT_FOUND, "订单不存在");
+        requireOwnedShop(merchantId, order.getShopId());
+        if (!Integer.valueOf(expected).equals(order.getOrderStatus()) || orders.updateStatus(id, expected, next) != 1) {
+            throw new BusinessException(HttpStatus.CONFLICT, "订单状态不允许此操作");
+        }
+        return get(merchantId, id);
+    }
+
     private void requireActiveMerchant(long merchantId) {
         var merchant = merchants.selectById(merchantId);
         if (merchant == null || !Integer.valueOf(1).equals(merchant.getStatus())) {
