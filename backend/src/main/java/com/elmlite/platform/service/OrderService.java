@@ -12,6 +12,7 @@ import com.elmlite.platform.exception.BusinessException;
 import com.elmlite.platform.mapper.CartItemMapper;
 import com.elmlite.platform.mapper.OrderItemMapper;
 import com.elmlite.platform.mapper.OrderMapper;
+import com.elmlite.platform.mapper.ProductMapper;
 import com.elmlite.platform.mapper.ShopMapper;
 import com.elmlite.platform.mapper.UserMapper;
 import jakarta.validation.ConstraintViolationException;
@@ -38,12 +39,13 @@ public class OrderService {
     private final AddressService addresses;
     private final CartItemMapper carts;
     private final ShopMapper shops;
+    private final ProductMapper products;
     private final CheckoutService checkout;
     private final Validator validator;
 
     public OrderService(OrderMapper orders, OrderItemMapper items, UserService users, UserMapper userMapper,
                         AddressService addresses, CartItemMapper carts, ShopMapper shops,
-                        CheckoutService checkout, Validator validator) {
+                        ProductMapper products, CheckoutService checkout, Validator validator) {
         this.orders = orders;
         this.items = items;
         this.users = users;
@@ -51,6 +53,7 @@ public class OrderService {
         this.addresses = addresses;
         this.carts = carts;
         this.shops = shops;
+        this.products = products;
         this.checkout = checkout;
         this.validator = validator;
     }
@@ -147,6 +150,42 @@ public class OrderService {
         }
         List<Item> lines = items.selectList(Wrappers.<OrderItem>lambdaQuery().eq(OrderItem::getOrderId, id)
                 .orderByAsc(OrderItem::getId)).stream().map(Item::from).toList();
+        return Detail.from(order, lines);
+    }
+
+    @Transactional
+    public Detail cancel(long userId, long id) {
+        userMapper.lockById(userId);
+        users.getCurrent(userId);
+        Order order = orders.lockById(id);
+        if (order == null) throw new BusinessException(HttpStatus.NOT_FOUND, "订单不存在");
+        if (!Long.valueOf(userId).equals(order.getUserId())) {
+            throw new BusinessException(HttpStatus.FORBIDDEN, "无权取消该订单");
+        }
+        if (Integer.valueOf(5).equals(order.getOrderStatus())) return detail(order);
+        if (!Integer.valueOf(0).equals(order.getOrderStatus())) {
+            throw new BusinessException(HttpStatus.CONFLICT, "当前订单状态不可取消");
+        }
+
+        List<OrderItem> lines = items.selectList(Wrappers.<OrderItem>lambdaQuery()
+                .eq(OrderItem::getOrderId, id).orderByAsc(OrderItem::getProductId).last("FOR UPDATE"));
+        for (OrderItem line : lines) {
+            products.lockById(line.getProductId());
+            if (products.restoreStock(line.getProductId(), line.getQuantity()) != 1) {
+                throw new BusinessException(HttpStatus.CONFLICT, "库存恢复失败");
+            }
+        }
+        if (orders.updateStatus(id, 0, 5) != 1) {
+            throw new BusinessException(HttpStatus.CONFLICT, "订单状态已变化");
+        }
+        order.setOrderStatus(5);
+        return Detail.from(order, lines.stream().map(Item::from).toList());
+    }
+
+    private Detail detail(Order order) {
+        List<Item> lines = items.selectList(Wrappers.<OrderItem>lambdaQuery()
+                .eq(OrderItem::getOrderId, order.getId()).orderByAsc(OrderItem::getId))
+                .stream().map(Item::from).toList();
         return Detail.from(order, lines);
     }
 
