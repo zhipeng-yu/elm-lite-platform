@@ -158,6 +158,22 @@ public class CouponService {
                 displayStatus);
     }
 
+    @Transactional(propagation =
+            org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public com.elmlite.platform.dto.CouponUsageResult consumeCoupon(
+            long userId,
+            long userCouponId,
+            long shopId,
+            long productAmountCent) {
+        throw new UnsupportedOperationException("consumeCoupon not implemented");
+    }
+
+    @Transactional(propagation =
+            org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void returnCoupon(long userId, long userCouponId) {
+        throw new UnsupportedOperationException("returnCoupon not implemented");
+    }
+
     private void validateClaimable(
             Coupon coupon) {
 
