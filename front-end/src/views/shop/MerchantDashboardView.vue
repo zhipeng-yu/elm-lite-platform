@@ -10,6 +10,7 @@
         <div v-if="shop"><p>{{ shop.address }}</p><p class="muted">起送 ¥{{ formatPriceCent(shop.startPriceCent) }} · 配送 ¥{{ formatPriceCent(shop.deliveryPriceCent) }}</p></div>
         <label v-if="shop">营业状态<select :value="shop.businessStatus" :disabled="busy || detailLoading" @change="changeStatus(Number($event.target.value))"><option :value="0">休息</option><option :value="1">营业</option><option :value="2">临时闭店</option></select></label>
       </section>
+      <MerchantCouponPanel :shop-id="shopId" />
       <p v-if="detailLoading" role="status">正在加载分类与商品…</p>
       <template v-else>
         <section class="surface-card">
@@ -43,7 +44,11 @@
             <label>商品名称<input v-model.trim="form.productName" required maxlength="100"></label>
             <label>所属分类<select v-model.number="form.categoryId" required><option v-for="c in categories.filter(c => c.status === 1 || c.id === form.categoryId)" :key="c.id" :value="c.id" :disabled="c.status !== 1">{{ c.categoryName }}{{ c.status === 0 ? '（停用）' : '' }}</option></select></label>
             <label>商品描述<textarea v-model="form.description" maxlength="255"></textarea></label>
-            <label>图片地址<input v-model.trim="form.imageUrl" type="url" maxlength="255" placeholder="https://…（可选）"></label>
+            <label>封面图片地址<input v-model.trim="form.imageUrl" type="url" maxlength="255" placeholder="https://…（可选）"></label>
+            <p class="muted">详情图最多 3 张，支持 HTTP(S) 地址或本站 /images/ 路径。</p>
+            <label>详情图 1<input v-model.trim="form.detailImageUrls[0]" type="text" maxlength="255" placeholder="https://… 或 /images/…（可选）"></label>
+            <label>详情图 2<input v-model.trim="form.detailImageUrls[1]" type="text" maxlength="255" placeholder="https://… 或 /images/…（可选）"></label>
+            <label>详情图 3<input v-model.trim="form.detailImageUrls[2]" type="text" maxlength="255" placeholder="https://… 或 /images/…（可选）"></label>
             <div class="form-columns"><label>售价（元）<input v-model.number="form.priceYuan" type="number" required min="0.01" max="99999999.99" step="0.01"></label><label>库存<input v-model.number="form.stock" type="number" required min="0" max="2147483647" step="1"></label></div>
             <p v-if="editingId" class="muted">只有修改库存数值时才会设置库存，请先确认最新库存。</p>
           </template>
@@ -61,6 +66,7 @@ import { ElMessage } from 'element-plus'
 import * as api from '@/api/merchant'
 import { formatPriceCent } from '@/utils/format'
 import { productPayload } from '@/utils/merchant-form'
+import MerchantCouponPanel from './MerchantCouponPanel.vue'
 const shops = ref([]), shopId = ref(null), categories = ref([]), products = ref([])
 const loading = ref(false), detailLoading = ref(false), busy = ref(false), error = ref(''), formError = ref('')
 const dialogOpen = ref(false), kind = ref('shop'), editingId = ref(null), form = ref({})
@@ -91,7 +97,7 @@ function open(kindValue, row, values) {
 }
 function openShop() { open('shop', null, { shopName: '', address: '', description: '', startYuan: 0, deliveryYuan: 0 }) }
 function openCategory(row) { open('category', row, { categoryName: row?.categoryName ?? '', sortOrder: row?.sortOrder ?? 0, status: row?.status ?? 1 }) }
-function openProduct(row) { open('product', row, { productName: row?.productName ?? '', categoryId: row?.categoryId ?? categories.value.find(c => c.status === 1)?.id, description: row?.description ?? '', imageUrl: row?.imageUrl ?? '', priceYuan: (row?.priceCent ?? 100) / 100, stock: row?.stock ?? 0 }) }
+function openProduct(row) { open('product', row, { productName: row?.productName ?? '', categoryId: row?.categoryId ?? categories.value.find(c => c.status === 1)?.id, description: row?.description ?? '', imageUrl: row?.imageUrl ?? '', detailImageUrls: [row?.detailImageUrls?.[0] ?? '', row?.detailImageUrls?.[1] ?? '', row?.detailImageUrls?.[2] ?? ''], priceYuan: (row?.priceCent ?? 100) / 100, stock: row?.stock ?? 0 }) }
 async function save() {
   if (busy.value) return
   busy.value = true; formError.value = ''
