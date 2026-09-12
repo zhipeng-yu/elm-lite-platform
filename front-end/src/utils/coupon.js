@@ -101,16 +101,26 @@ export function myCouponStatusLabel(status) {
 export function applicableCoupons(
   coupons,
   shopId,
-  productAmountCent
+  productAmountCent,
+  now = new Date()
 ) {
   const amount = Number(productAmountCent)
+  const currentTime = now.getTime()
 
-  return (coupons ?? []).filter(
-    (coupon) =>
+  return (coupons ?? []).filter((coupon) => {
+    const startsTime = new Date(coupon.startsAt).getTime()
+    const expiresTime = new Date(coupon.expiresAt).getTime()
+
+    return (
       coupon.status === 'AVAILABLE' &&
       Number(coupon.shopId) === Number(shopId) &&
-      amount >= Number(coupon.thresholdCent)
-  )
+      amount >= Number(coupon.thresholdCent) &&
+      Number.isFinite(startsTime) &&
+      Number.isFinite(expiresTime) &&
+      startsTime <= currentTime &&
+      currentTime < expiresTime
+    )
+  })
 }
 
 export function couponDiscountCent(
