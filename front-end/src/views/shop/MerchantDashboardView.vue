@@ -1,6 +1,6 @@
 <template>
   <div class="workspace">
-    <header class="page-heading"><div><p class="eyebrow">商家工作台</p><h1>把店铺打理好，把美味送出去</h1></div><button class="primary" :disabled="busy" @click="openShop">创建店铺</button></header>
+    <header class="page-heading"><div><p class="eyebrow">商家工作台</p><h1>把店铺打理好，把美味送出去</h1></div><div class="actions"><router-link class="secondary" to="/merchant/orders">处理订单</router-link><button class="primary" :disabled="busy" @click="openShop">创建店铺</button></div></header>
     <p v-if="error" role="alert" class="error-text">{{ error }} <button class="secondary" :disabled="busy" @click="loadShops">重新加载</button></p>
     <p v-if="loading" role="status">正在加载店铺…</p>
     <section v-else-if="!shops.length" class="surface-card empty-state"><h2>从你的第一家店开始</h2><p>创建店铺后，添加分类和商品，再将店铺设为营业。</p></section>

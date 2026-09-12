@@ -15,3 +15,7 @@ server:
 security:
   jwt:
     secret: ${JWT_SECRET}
+
+admin:
+  username: ${ADMIN_USERNAME:}
+  password: ${ADMIN_PASSWORD:}

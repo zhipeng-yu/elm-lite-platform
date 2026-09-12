@@ -1,3 +1,4 @@
+-- V5 follows the administrator-account migration introduced concurrently as V4.
 CREATE TABLE coupon (
     id BIGINT NOT NULL AUTO_INCREMENT COMMENT '优惠券编号',
     shop_id BIGINT NOT NULL COMMENT '所属店铺编号',

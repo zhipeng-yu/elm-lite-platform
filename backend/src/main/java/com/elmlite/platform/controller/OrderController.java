@@ -40,4 +40,9 @@ public class OrderController {
     public ApiResponse<OrderService.Detail> get(@AuthenticationPrincipal Jwt jwt, @PathVariable("id") long id) {
         return ApiResponse.success(orders.get(Long.parseLong(jwt.getSubject()), id));
     }
+
+    @PostMapping("/{id}/cancel")
+    public ApiResponse<OrderService.Detail> cancel(@AuthenticationPrincipal Jwt jwt, @PathVariable("id") long id) {
+        return ApiResponse.success(orders.cancel(Long.parseLong(jwt.getSubject()), id));
+    }
 }

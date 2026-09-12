@@ -26,3 +26,10 @@ export const createCoupon = (shopId, data) =>
 
 export const updateCouponEnabled = (couponId, enabled) =>
   request.patch(`/merchant/coupons/${couponId}`, { enabled })
+
+export const listMerchantOrders = (shopId, orderStatus) => request.get(`/merchant/shops/${shopId}/orders`, {
+  params: orderStatus === '' ? {} : { orderStatus }
+})
+export const fetchMerchantOrder = (id) => request.get(`/merchant/orders/${id}`)
+export const confirmMerchantOrder = (id) => request.post(`/merchant/orders/${id}/confirm`)
+export const prepareMerchantOrder = (id) => request.post(`/merchant/orders/${id}/prepare`)
