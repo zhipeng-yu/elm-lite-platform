@@ -559,6 +559,23 @@ if (import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true') {
       }
     }
 
+    if (method === 'post' && /^\/orders\/\d+\/cancel$/.test(url)) {
+      await wait(600)
+      const session = requireSession(config)
+      const id = Number(url.split('/')[2])
+      const order = MOCK_ORDERS.find((item) => item.id === id)
+      if (!order) throw fail(config, 404, '订单不存在')
+      if (order.userId !== session.userId) throw fail(config, 403, '无权取消该订单')
+      if (order.orderStatus === 5) return ok(config, orderView(order))
+      if (order.orderStatus !== 0) throw fail(config, 409, '当前订单状态不可取消')
+      order.detail.items.forEach((item) => {
+        const product = MOCK_PRODUCTS.find((value) => value.id === item.productId)
+        product.stock += item.quantity
+      })
+      order.orderStatus = 5
+      return ok(config, orderView(order))
+    }
+
     // ---------- D5：订单接口（创建、列表与详情） ----------
     if (url === '/orders' || /^\/orders\/[^/]+$/.test(url)) {
       await wait(600)

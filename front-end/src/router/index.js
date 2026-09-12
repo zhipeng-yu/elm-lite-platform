@@ -22,6 +22,8 @@ const routes = [
     children: [
       { path: 'profile', component: () => import('@/views/auth/ProfileView.vue'), meta: { accountType: 'USER' } },
       { path: 'merchant', component: () => import('@/views/shop/MerchantDashboardView.vue'), meta: { accountType: 'MERCHANT' } },
+      { path: 'merchant/orders', component: () => import('@/views/order/MerchantOrderListView.vue'), meta: { accountType: 'MERCHANT' } },
+      { path: 'merchant/orders/:id', component: () => import('@/views/order/MerchantOrderDetailView.vue'), meta: { accountType: 'MERCHANT' } },
       {
         path: 'home',
         name: 'home',

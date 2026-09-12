@@ -14,3 +14,7 @@ export function fetchOrders() {
 export function fetchOrder(id) {
   return request.get(`/orders/${id}`)
 }
+
+export function cancelOrder(id) {
+  return request.post(`/orders/${id}/cancel`)
+}
