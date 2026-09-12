@@ -1,0 +1,10 @@
+CREATE TABLE rider (
+    id BIGINT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(100) NOT NULL,
+    display_name VARCHAR(50) NOT NULL,
+    status TINYINT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP
+);
+ALTER TABLE orders ADD rider_id BIGINT REFERENCES rider(id);
