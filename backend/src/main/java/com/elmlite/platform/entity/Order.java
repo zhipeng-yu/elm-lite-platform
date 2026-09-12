@@ -23,6 +23,9 @@ public class Order {
     @TableField("shop_id")
     private Long shopId;
 
+    @TableField("rider_id")
+    private Long riderId;
+
     @TableField("address_id")
     private Long addressId;
 
@@ -87,6 +90,10 @@ public class Order {
     public void setShopId(Long shopId) {
         this.shopId = shopId;
     }
+
+    public Long getRiderId() { return riderId; }
+
+    public void setRiderId(Long riderId) { this.riderId = riderId; }
 
     public Long getAddressId() {
         return addressId;
