@@ -165,13 +165,134 @@ public class CouponService {
             long userCouponId,
             long shopId,
             long productAmountCent) {
-        throw new UnsupportedOperationException("consumeCoupon not implemented");
+
+        if (productAmountCent < 0) {
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST,
+                    "商品金额不能为负数");
+        }
+
+        UserCoupon userCoupon =
+                userCouponMapper.selectByIdForUpdate(userCouponId);
+
+        if (userCoupon == null) {
+            throw new BusinessException(
+                    HttpStatus.NOT_FOUND,
+                    "用户优惠券不存在");
+        }
+
+        if (!Long.valueOf(userId).equals(userCoupon.getUserId())) {
+            throw new BusinessException(
+                    HttpStatus.FORBIDDEN,
+                    "无权使用该优惠券");
+        }
+
+        if (!Integer.valueOf(0).equals(userCoupon.getStatus())) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券已使用");
+        }
+
+        Coupon coupon = couponMapper.selectById(userCoupon.getCouponId());
+
+        if (coupon == null) {
+            throw new BusinessException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "优惠券关联数据异常");
+        }
+
+        if (!Long.valueOf(shopId).equals(coupon.getShopId())) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券不属于当前店铺");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (!Integer.valueOf(1).equals(coupon.getEnabled())) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券已停用");
+        }
+
+        if (coupon.getStartsAt() == null
+                || now.isBefore(coupon.getStartsAt())) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券尚未开始");
+        }
+
+        if (coupon.getExpiresAt() == null
+                || !now.isBefore(coupon.getExpiresAt())) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券已过期");
+        }
+
+        long thresholdCent = coupon.getThresholdAmount()
+                .movePointRight(2)
+                .longValueExact();
+
+        if (productAmountCent < thresholdCent) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "商品金额未达到优惠券门槛");
+        }
+
+        long couponDiscountCent = coupon.getDiscountAmount()
+                .movePointRight(2)
+                .longValueExact();
+
+        long discountAmountCent =
+                Math.min(couponDiscountCent, productAmountCent);
+
+        int changed = userCouponMapper.updateStatusIfMatches(
+                userCouponId, userId, 0, 1);
+
+        if (changed != 1) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券状态已发生变化");
+        }
+
+        return new com.elmlite.platform.dto.CouponUsageResult(
+                userCouponId,
+                coupon.getId(),
+                discountAmountCent);
     }
 
     @Transactional(propagation =
             org.springframework.transaction.annotation.Propagation.MANDATORY)
     public void returnCoupon(long userId, long userCouponId) {
-        throw new UnsupportedOperationException("returnCoupon not implemented");
+        UserCoupon userCoupon =
+                userCouponMapper.selectByIdForUpdate(userCouponId);
+
+        if (userCoupon == null) {
+            throw new BusinessException(
+                    HttpStatus.NOT_FOUND,
+                    "用户优惠券不存在");
+        }
+
+        if (!Long.valueOf(userId).equals(userCoupon.getUserId())) {
+            throw new BusinessException(
+                    HttpStatus.FORBIDDEN,
+                    "无权返还该优惠券");
+        }
+
+        if (!Integer.valueOf(1).equals(userCoupon.getStatus())) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券状态不允许返还");
+        }
+
+        int changed = userCouponMapper.updateStatusIfMatches(
+                userCouponId, userId, 1, 0);
+
+        if (changed != 1) {
+            throw new BusinessException(
+                    HttpStatus.CONFLICT,
+                    "优惠券状态已发生变化");
+        }
     }
 
     private void validateClaimable(
