@@ -51,10 +51,48 @@
           <div class="summary">
             <p>商品小计：¥{{ formatPriceCent(selectedTotalCent) }}</p>
             <p>配送费：¥{{ formatPriceCent(deliveryFeeCent) }}</p>
-            <p class="total">合计：¥{{ formatPriceCent(selectedTotalCent + deliveryFeeCent) }}</p>
+            <p v-if="discountAmountCent > 0">优惠：-¥{{ formatPriceCent(discountAmountCent) }}</p>
+            <p class="total">合计：¥{{ formatPriceCent(payableTotalCent) }}</p>
           </div>
         </el-card>
 
+        <el-card class="panel">
+          <template #header>
+            <div class="panel-header">
+              <span>优惠券</span>
+              <el-button
+                link
+                type="primary"
+                @click="router.push('/coupons')"
+              >
+                查看我的券
+              </el-button>
+            </div>
+          </template>
+
+          <el-select
+            v-model="selectedUserCouponId"
+            clearable
+            placeholder="不使用优惠券"
+            :disabled="availableCoupons.length === 0"
+          >
+            <el-option
+              v-for="coupon in availableCoupons"
+              :key="coupon.userCouponId"
+              :label="couponOptionLabel(coupon)"
+              :value="coupon.userCouponId"
+            />
+          </el-select>
+
+          <p
+            v-if="
+              myCoupons.length > 0 &&
+              availableCoupons.length === 0
+            "
+          >
+            当前订单暂无可用优惠券
+          </p>
+        </el-card>
         <el-card class="panel">
           <template #header><span>备注</span></template>
           <el-input
@@ -78,15 +116,17 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 
 import { fetchAddresses } from '@/api/address'
 import { fetchCartItems } from '@/api/cart'
 import { createOrder } from '@/api/order'
+import { listMyCoupons } from '@/api/coupon'
 import { fetchShop } from '@/api/shop'
 import { formatPriceCent } from '@/utils/format'
+import { applicableCoupons, couponDiscountCent } from '@/utils/coupon'
 
 const router = useRouter()
 const loading = ref(false)
@@ -98,6 +138,8 @@ const shop = ref(null)
 const addressId = ref(null)
 const selectedIds = ref([])
 const remark = ref('')
+const myCoupons = ref([])
+const selectedUserCouponId = ref(null)
 
 const selectedItems = computed(() =>
   cartItems.value.filter((item) => selectedIds.value.includes(item.id))
@@ -108,6 +150,51 @@ const selectedTotalCent = computed(() =>
 )
 
 const deliveryFeeCent = computed(() => shop.value?.deliveryPriceCent ?? 0)
+
+const availableCoupons = computed(() =>
+  applicableCoupons(
+    myCoupons.value,
+    shop.value?.id,
+    selectedTotalCent.value
+  )
+)
+
+const selectedCoupon = computed(() =>
+  availableCoupons.value.find(
+    (coupon) =>
+      coupon.userCouponId === selectedUserCouponId.value
+  ) ?? null
+)
+
+const discountAmountCent = computed(() =>
+  couponDiscountCent(
+    selectedCoupon.value,
+    selectedTotalCent.value
+  )
+)
+
+const payableTotalCent = computed(() =>
+  selectedTotalCent.value +
+  deliveryFeeCent.value -
+  discountAmountCent.value
+)
+
+watch(availableCoupons, (coupons) => {
+  const stillAvailable = coupons.some(
+    (coupon) =>
+      coupon.userCouponId === selectedUserCouponId.value
+  )
+
+  if (!stillAvailable) {
+    selectedUserCouponId.value = null
+  }
+})
+
+function couponOptionLabel(coupon) {
+  return `${coupon.name}：满¥${formatPriceCent(
+    coupon.thresholdCent
+  )}减¥${formatPriceCent(coupon.discountCent)}`
+}
 
 const canSubmit = computed(
   () =>
@@ -135,6 +222,8 @@ async function load() {
     addresses.value = addressList
     cartItems.value = cartList
     shop.value = cartList.length > 0 ? await fetchShop(cartList[0].shopId) : null
+    myCoupons.value = cartList.length > 0 ? await listMyCoupons() : []
+    selectedUserCouponId.value = null
     const defaultAddress = addressList.find((address) => address.isDefault === 1)
     addressId.value = defaultAddress ? defaultAddress.id : addressList[0]?.id ?? null
     selectedIds.value = cartList.map((item) => item.id)
@@ -151,11 +240,18 @@ async function handleSubmit() {
   }
   submitting.value = true
   try {
-    const order = await createOrder({
+    const payload = {
       addressId: addressId.value,
       cartItemIds: selectedIds.value,
       remark: remark.value || null
-    })
+    }
+
+    if (selectedCoupon.value) {
+      payload.userCouponId =
+        selectedUserCouponId.value
+    }
+
+    const order = await createOrder(payload)
     ElMessage.success('下单成功')
     router.push(`/orders/${order.id}`)
   } catch (error) {
