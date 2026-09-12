@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
+import java.util.concurrent.Executors;
 
 import static org.hamcrest.Matchers.contains;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -55,5 +56,13 @@ class RiderOrderTest {
   mvc.perform(get("/api/v1/rider/orders").header("Authorization","Bearer "+tokens.issue(1,JwtTokenService.AccountType.USER)))
    .andExpect(status().isForbidden());
   mvc.perform(get("/api/v1/rider/orders").header("Authorization",rider(3))).andExpect(status().isForbidden());
+ }
+
+ @Test void onlyOneRiderWinsConcurrentClaim() throws Exception {
+  try (var pool=Executors.newFixedThreadPool(2)) {
+   var first=pool.submit(()->mvc.perform(post("/api/v1/rider/orders/11/claim").header("Authorization",rider(1))).andReturn().getResponse().getStatus());
+   var second=pool.submit(()->mvc.perform(post("/api/v1/rider/orders/11/claim").header("Authorization",rider(2))).andReturn().getResponse().getStatus());
+   assert java.util.Set.of(first.get(),second.get()).equals(java.util.Set.of(200,409));
+  }
  }
 }
