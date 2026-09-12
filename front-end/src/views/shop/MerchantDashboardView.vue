@@ -10,6 +10,7 @@
         <div v-if="shop"><p>{{ shop.address }}</p><p class="muted">起送 ¥{{ formatPriceCent(shop.startPriceCent) }} · 配送 ¥{{ formatPriceCent(shop.deliveryPriceCent) }}</p></div>
         <label v-if="shop">营业状态<select :value="shop.businessStatus" :disabled="busy || detailLoading" @change="changeStatus(Number($event.target.value))"><option :value="0">休息</option><option :value="1">营业</option><option :value="2">临时闭店</option></select></label>
       </section>
+      <MerchantCouponPanel :shop-id="shopId" />
       <p v-if="detailLoading" role="status">正在加载分类与商品…</p>
       <template v-else>
         <section class="surface-card">
