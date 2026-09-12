@@ -5,6 +5,13 @@ import { getToken, getAccountType } from '@/utils/auth'
 // 后续页面任务在自己的模块内追加，共享修改需先与龙确认。
 const routes = [
   { path: '/merchant/login', component: () => import('@/views/auth/MerchantAuthView.vue') },
+  { path: '/admin/login', name: 'admin-login', component: () => import('@/views/admin/AdminLoginView.vue') },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('@/views/admin/AdminConsoleView.vue'),
+    meta: { accountType: 'ADMIN' }
+  },
   { path: '/', redirect: '/home' },
   {
     path: '/login',
@@ -103,7 +110,13 @@ export default router
 router.beforeEach((to) => {
   const type = to.meta.accountType
   if (!type) return true
-  if (!getToken()) return { path: type === 'MERCHANT' ? '/merchant/login' : '/login', query: { redirect: to.fullPath } }
-  if (getAccountType() !== type) return getAccountType() === 'MERCHANT' ? '/merchant' : '/home'
+  if (!getToken()) {
+    const loginPath = type === 'MERCHANT' ? '/merchant/login' : type === 'ADMIN' ? '/admin/login' : '/login'
+    return { path: loginPath, query: { redirect: to.fullPath } }
+  }
+  if (getAccountType() !== type) {
+    const current = getAccountType()
+    return current === 'MERCHANT' ? '/merchant' : current === 'ADMIN' ? '/admin' : '/home'
+  }
   return true
 })
