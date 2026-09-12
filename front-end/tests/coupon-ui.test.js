@@ -1,10 +1,16 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 
 import {
   couponAvailability,
   couponPayload
 } from '../src/utils/coupon.js'
+
+const merchantDashboardSource = await readFile(
+  new URL('../src/views/shop/MerchantDashboardView.vue', import.meta.url),
+  'utf8'
+)
 
 test('优惠券表单转换为整数分并清理名称', () => {
   assert.deepEqual(
@@ -113,5 +119,12 @@ test('优惠券状态区分可领取、停用、未开始和过期', () => {
       now
     ),
     '已过期'
+  )
+})
+
+test('商家工作台展示当前店铺的优惠券管理面板', () => {
+  assert.match(
+    merchantDashboardSource,
+    /<MerchantCouponPanel\s+:shop-id="shopId"/
   )
 })
