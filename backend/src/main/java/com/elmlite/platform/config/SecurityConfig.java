@@ -71,6 +71,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/merchant/categories/**", "/api/v1/merchant/products/**")
                         .hasAuthority("MERCHANT")
                         .requestMatchers("/api/v1/merchant/orders/**").hasAuthority("MERCHANT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/coupons/mine").hasAuthority("USER")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(authenticationConverter))

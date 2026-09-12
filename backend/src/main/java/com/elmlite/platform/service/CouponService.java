@@ -1,6 +1,7 @@
 package com.elmlite.platform.service;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.elmlite.platform.dto.MyCouponResponse;
 import com.elmlite.platform.entity.Coupon;
 import com.elmlite.platform.entity.UserCoupon;
 import com.elmlite.platform.exception.BusinessException;
@@ -107,6 +108,54 @@ public class CouponService {
         }
 
         return userCoupon;
+    }
+
+    @Transactional(readOnly = true)
+    public List<MyCouponResponse> listMine(long userId) {
+        userService.getCurrent(userId);
+        LocalDateTime now = LocalDateTime.now();
+
+        return userCouponMapper.selectList(
+                        Wrappers.<UserCoupon>lambdaQuery()
+                                .eq(UserCoupon::getUserId, userId)
+                                .orderByDesc(UserCoupon::getId))
+                .stream()
+                .map(userCoupon -> toMyCouponResponse(userCoupon, now))
+                .toList();
+    }
+
+    private MyCouponResponse toMyCouponResponse(
+            UserCoupon userCoupon, LocalDateTime now) {
+        Coupon coupon = couponMapper.selectById(userCoupon.getCouponId());
+
+        if (coupon == null) {
+            throw new BusinessException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "优惠券关联数据异常");
+        }
+
+        String displayStatus;
+        if (Integer.valueOf(1).equals(userCoupon.getStatus())) {
+            displayStatus = "USED";
+        } else if (!now.isBefore(coupon.getExpiresAt())) {
+            displayStatus = "EXPIRED";
+        } else if (!Integer.valueOf(1).equals(coupon.getEnabled())) {
+            displayStatus = "DISABLED";
+        } else {
+            displayStatus = "AVAILABLE";
+        }
+
+        return new MyCouponResponse(
+                userCoupon.getId(),
+                coupon.getId(),
+                coupon.getShopId(),
+                coupon.getName(),
+                coupon.getThresholdAmount().movePointRight(2).longValueExact(),
+                coupon.getDiscountAmount().movePointRight(2).longValueExact(),
+                coupon.getStartsAt(),
+                coupon.getExpiresAt(),
+                Integer.valueOf(1).equals(coupon.getEnabled()),
+                displayStatus);
     }
 
     private void validateClaimable(

@@ -1,6 +1,7 @@
 package com.elmlite.platform.controller;
 
 import com.elmlite.platform.common.ApiResponse;
+import com.elmlite.platform.dto.MyCouponResponse;
 import com.elmlite.platform.entity.Coupon;
 import com.elmlite.platform.service.CouponService;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -63,6 +64,13 @@ public class CouponController {
                 .body(
                         ApiResponse.success(
                                 null));
+    }
+
+    @GetMapping("/api/v1/coupons/mine")
+    public ApiResponse<List<MyCouponResponse>> listMine(
+            @AuthenticationPrincipal Jwt jwt) {
+        return ApiResponse.success(
+                couponService.listMine(Long.parseLong(jwt.getSubject())));
     }
 
     public record CouponResponse(
