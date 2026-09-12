@@ -7,4 +7,3 @@ CREATE TABLE rider (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP
 );
-ALTER TABLE orders ADD rider_id BIGINT REFERENCES rider(id);
