@@ -47,5 +47,19 @@ class OrderCouponIntegrationTest {
   for(int i=0;i<2;i++) mvc.perform(post("/api/v1/orders/"+id+"/cancel").header("Authorization",user())).andExpect(status().isOk());
   assertEquals(0,jdbc.queryForObject("SELECT status FROM user_coupon WHERE id=1",Integer.class));
  }
+
+ @Test void couponOrderCompletesMerchantAndRiderLifecycle() throws Exception {
+  var created=mvc.perform(post("/api/v1/orders").header("Authorization",user()).contentType(MediaType.APPLICATION_JSON)
+   .content("{\"addressId\":1,\"cartItemIds\":[1],\"userCouponId\":1}")).andReturn();
+  long id=new com.fasterxml.jackson.databind.ObjectMapper().readTree(created.getResponse().getContentAsString()).path("data").path("id").asLong();
+  mvc.perform(post("/api/v1/merchant/orders/"+id+"/confirm").header("Authorization",token(1,JwtTokenService.AccountType.MERCHANT))).andExpect(status().isOk());
+  mvc.perform(post("/api/v1/merchant/orders/"+id+"/prepare").header("Authorization",token(1,JwtTokenService.AccountType.MERCHANT))).andExpect(status().isOk());
+  mvc.perform(post("/api/v1/rider/orders/"+id+"/claim").header("Authorization",token(1,JwtTokenService.AccountType.RIDER))).andExpect(status().isOk());
+  mvc.perform(post("/api/v1/rider/orders/"+id+"/dispatch").header("Authorization",token(1,JwtTokenService.AccountType.RIDER))).andExpect(status().isOk());
+  mvc.perform(post("/api/v1/rider/orders/"+id+"/complete").header("Authorization",token(1,JwtTokenService.AccountType.RIDER)))
+   .andExpect(status().isOk()).andExpect(jsonPath("$.data.orderStatus").value(4)).andExpect(jsonPath("$.data.discountAmountCent").value(500));
+  assertEquals(1,jdbc.queryForObject("SELECT status FROM user_coupon WHERE id=1",Integer.class));
+ }
  private String user(){return "Bearer "+tokens.issue(1,JwtTokenService.AccountType.USER);}
+ private String token(long id,JwtTokenService.AccountType type){return "Bearer "+tokens.issue(id,type);}
 }
