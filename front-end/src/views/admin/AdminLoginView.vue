@@ -37,7 +37,7 @@
           </el-button>
         </el-form-item>
       </el-form>
-      <p class="tip">开发期模拟账号：admin / admin123456（后端就绪后失效）</p>
+      <p v-if="isMock" class="tip">开发期模拟账号：admin / admin123456（后端就绪后失效）</p>
     </el-card>
   </div>
 </template>
@@ -49,6 +49,8 @@ import { ElMessage } from 'element-plus'
 
 import { adminLogin } from '@/api/admin'
 import { setToken } from '@/utils/auth'
+
+const isMock = import.meta.env.DEV && import.meta.env.VITE_USE_MOCK === 'true'
 
 const router = useRouter()
 const formRef = ref()
