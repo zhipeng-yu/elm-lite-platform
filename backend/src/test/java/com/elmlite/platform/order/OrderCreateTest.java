@@ -144,6 +144,14 @@ class OrderCreateTest {
     }
 
     @Test
+    void rejectsNewOrderWhenShopMerchantIsDisabled() throws Exception {
+        jdbc.update("UPDATE merchant SET status=0 WHERE id=1");
+        create(1, "{\"addressId\":1,\"cartItemIds\":[1]}")
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value(409));
+        unchanged();
+    }
+
+    @Test
     void laterStockFailureRollsBackEarlierDeduction() throws Exception {
         jdbc.update("UPDATE cart_item SET quantity=6 WHERE id=2");
         create(1, "{\"addressId\":1,\"cartItemIds\":[1,2]}").andExpect(status().isConflict());
