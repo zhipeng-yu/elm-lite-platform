@@ -137,6 +137,13 @@ async function cancel() {
   margin-bottom: 6px;
 }
 
+.order-head h2 {
+  flex: 1;
+  min-width: 0;
+  word-break: break-all;
+  font-size: 18px;
+}
+
 .time {
   color: #909399;
   margin-bottom: 12px;
