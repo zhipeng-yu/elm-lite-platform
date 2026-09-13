@@ -14,7 +14,7 @@
           <details v-if="hasToken" ref="accountMenu" class="account-menu">
             <summary>{{ isMerchant ? '商家账户' : '我的账户' }} <span aria-hidden="true">⌄</span></summary>
             <div class="account-dropdown">
-              <template v-if="!isMerchant"><router-link to="/profile">个人信息</router-link><router-link to="/addresses">收货地址</router-link></template>
+              <template v-if="!isMerchant"><router-link to="/profile">个人信息</router-link><router-link to="/addresses">收货地址</router-link><router-link to="/coupons/mine">我的优惠券</router-link></template>
               <router-link v-else to="/merchant">商家工作台</router-link>
               <button @click="handleLogout">退出登录</button>
             </div>
