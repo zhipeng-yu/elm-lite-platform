@@ -3,6 +3,7 @@ package com.elmlite.platform.service;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.elmlite.platform.entity.Admin;
 import com.elmlite.platform.mapper.AdminMapper;
+import org.apache.ibatis.exceptions.PersistenceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,7 +58,7 @@ public class AdminInitializer implements ApplicationRunner {
             admin.setStatus(1);
             adminMapper.insert(admin);
             log.info("管理员账号初始化完成");
-        } catch (DataAccessException exception) {
+        } catch (DataAccessException | PersistenceException exception) {
             log.warn("管理员账号表不可用，跳过管理员账号初始化");
         }
     }
