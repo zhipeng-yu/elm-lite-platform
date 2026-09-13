@@ -12,6 +12,7 @@ import com.elmlite.platform.exception.BusinessException;
 import com.elmlite.platform.mapper.CartItemMapper;
 import com.elmlite.platform.mapper.OrderItemMapper;
 import com.elmlite.platform.mapper.OrderMapper;
+import com.elmlite.platform.mapper.MerchantMapper;
 import com.elmlite.platform.mapper.ProductMapper;
 import com.elmlite.platform.mapper.ShopMapper;
 import com.elmlite.platform.mapper.UserMapper;
@@ -39,13 +40,14 @@ public class OrderService {
     private final AddressService addresses;
     private final CartItemMapper carts;
     private final ShopMapper shops;
+    private final MerchantMapper merchants;
     private final ProductMapper products;
     private final CheckoutService checkout;
     private final CouponService coupons;
     private final Validator validator;
 
     public OrderService(OrderMapper orders, OrderItemMapper items, UserService users, UserMapper userMapper,
-                        AddressService addresses, CartItemMapper carts, ShopMapper shops,
+                        AddressService addresses, CartItemMapper carts, ShopMapper shops, MerchantMapper merchants,
                         ProductMapper products, CheckoutService checkout, CouponService coupons, Validator validator) {
         this.orders = orders;
         this.items = items;
@@ -54,6 +56,7 @@ public class OrderService {
         this.addresses = addresses;
         this.carts = carts;
         this.shops = shops;
+        this.merchants = merchants;
         this.products = products;
         this.checkout = checkout;
         this.coupons = coupons;
@@ -104,6 +107,10 @@ public class OrderService {
         if (shop == null) throw new BusinessException(HttpStatus.NOT_FOUND, "店铺不存在");
         if (!Integer.valueOf(1).equals(shop.getBusinessStatus())) {
             throw new BusinessException(HttpStatus.CONFLICT, "店铺未营业");
+        }
+        var merchant = merchants.selectById(shop.getMerchantId());
+        if (merchant == null || !Integer.valueOf(1).equals(merchant.getStatus())) {
+            throw new BusinessException(HttpStatus.CONFLICT, "商家账号不可用");
         }
         if (productAmount.compareTo(shop.getStartPrice()) < 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "商品金额未达到起送价");
