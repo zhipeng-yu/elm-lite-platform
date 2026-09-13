@@ -58,6 +58,18 @@ try {
         }
         New-Item -ItemType File (Join-Path $demoDir 'initialized') | Out-Null
     }
+    $migrations = Get-ChildItem (Join-Path $repo 'database/migration/V*__*.sql') |
+        Where-Object { $_.BaseName -notmatch '^V[12]__' } |
+        Sort-Object { [int]($_.BaseName -replace '^V(\d+)__.*$', '$1') }
+    foreach ($migration in $migrations) {
+        $marker = Join-Path $demoDir "migration-$($migration.BaseName).applied"
+        if (!(Test-Path $marker)) {
+            $sourcePath = $migration.FullName.Replace('\', '/')
+            & $mysql @dbArgs elm_lite -e "source $sourcePath"
+            if ($LASTEXITCODE -ne 0) { throw "Migration failed: $($migration.Name)" }
+            New-Item -ItemType File $marker | Out-Null
+        }
+    }
     & python (Join-Path $repo 'scripts/seed-demo.py')
     if ($LASTEXITCODE -ne 0) { throw 'Demo catalog import failed' }
     $env:DB_URL = 'jdbc:mysql://127.0.0.1:13317/elm_lite?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai'
