@@ -408,6 +408,15 @@ GET /api/v1/shops/{id}
 - 用券核销、扣库存、写订单和清购物车同事务；一张用户券并发下单只能使用一次，冲突 409。取消返还该用户券，但不延长有效期；已过期或停用的券返还后仍不可用。取消不自动恢复购物车。
 - 梁实现核销/返券方法，余负责订单生命周期；对接方法参加调用方事务，统一锁顺序，禁止另开独立事务。方法签名及调用约束见第 9.7 节。
 
+#### 我的优惠券响应
+
+`GET /coupons/mine` 仅允许有效的 USER 身份访问，只返回当前用户领取的券。成功响应的 `data` 为数组，无券时返回 `[]`，按 `userCouponId` 降序排列。
+
+- 单项字段：`userCouponId`、`couponId`、`shopId`、`name`、`thresholdCent`、`discountCent`、`startsAt`、`expiresAt`、`enabled`、`status`；不返回 `userId`。
+- `thresholdCent`、`discountCent` 为整数分，`enabled` 为布尔值。
+- 展示状态按 `USED > EXPIRED > DISABLED > AVAILABLE` 判定，分别表示已使用、已过期、已停用及未使用且未过期、已启用。
+- `AVAILABLE` 不代表当前订单一定可以使用；结算还需检查同店、优惠前商品金额达到门槛，以及 `startsAt <= 当前时间 < expiresAt`。下单最终由后端重新校验并计算优惠。
+
 ### 9.5 管理员端与权限
 
 新增 `accountType=ADMIN`，管理员账号通过受控初始化创建，无公开注册入口。初始化凭据不得写入仓库或日志。

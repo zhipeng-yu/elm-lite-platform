@@ -87,3 +87,58 @@ export function couponAvailability(
 
   return '可领取'
 }
+const MY_COUPON_STATUS_LABELS = {
+  AVAILABLE: '可使用',
+  USED: '已使用',
+  EXPIRED: '已过期',
+  DISABLED: '已停用'
+}
+
+export function myCouponStatusLabel(status) {
+  return MY_COUPON_STATUS_LABELS[status] ?? '状态未知'
+}
+
+export function applicableCoupons(
+  coupons,
+  shopId,
+  productAmountCent,
+  now = new Date()
+) {
+  const amount = Number(productAmountCent)
+  const currentTime = now.getTime()
+
+  return (coupons ?? []).filter((coupon) => {
+    const startsTime = new Date(coupon.startsAt).getTime()
+    const expiresTime = new Date(coupon.expiresAt).getTime()
+
+    return (
+      coupon.status === 'AVAILABLE' &&
+      Number(coupon.shopId) === Number(shopId) &&
+      amount >= Number(coupon.thresholdCent) &&
+      Number.isFinite(startsTime) &&
+      Number.isFinite(expiresTime) &&
+      startsTime <= currentTime &&
+      currentTime < expiresTime
+    )
+  })
+}
+
+export function couponDiscountCent(
+  coupon,
+  productAmountCent
+) {
+  if (!coupon) {
+    return 0
+  }
+
+  const productAmount = Math.max(
+    0,
+    Number(productAmountCent) || 0
+  )
+  const discount = Math.max(
+    0,
+    Number(coupon.discountCent) || 0
+  )
+
+  return Math.min(productAmount, discount)
+}
