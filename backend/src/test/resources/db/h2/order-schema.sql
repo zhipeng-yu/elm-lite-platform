@@ -20,6 +20,7 @@ CREATE TABLE orders (
     order_no VARCHAR(32) NOT NULL,
     user_id BIGINT NOT NULL,
     shop_id BIGINT NOT NULL,
+    rider_id BIGINT,
     address_id BIGINT DEFAULT NULL,
     receiver_name VARCHAR(50) NOT NULL,
     receiver_phone VARCHAR(20) NOT NULL,

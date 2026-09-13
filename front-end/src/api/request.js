@@ -15,7 +15,7 @@ const service = axios.create({
 service.interceptors.request.use(
   (config) => {
     const token = getToken()
-    const publicAuth = config.method === 'post' && ['/users', '/auth/login', '/merchants', '/merchant/auth/login', '/admin/auth/login'].includes(config.url)
+    const publicAuth = config.method === 'post' && ['/users', '/auth/login', '/merchants', '/merchant/auth/login', '/admin/auth/login', '/riders', '/rider/auth/login'].includes(config.url)
     if (token && !publicAuth) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -46,6 +46,8 @@ service.interceptors.response.use(
       const current = router.currentRoute.value
       const loginPath = current.path.startsWith('/admin')
         ? '/admin/login'
+        : current.path.startsWith('/rider')
+          ? '/rider/login'
         : current.path.startsWith('/merchant')
           ? '/merchant/login'
           : '/login'

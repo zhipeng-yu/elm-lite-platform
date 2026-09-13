@@ -5,6 +5,8 @@ import { getToken, getAccountType } from '@/utils/auth'
 // 后续页面任务在自己的模块内追加，共享修改需先与龙确认。
 const routes = [
   { path: '/merchant/login', component: () => import('@/views/auth/MerchantAuthView.vue') },
+  { path: '/rider/login', component: () => import('@/views/rider/RiderAuthView.vue') },
+  { path: '/rider', component: () => import('@/views/rider/RiderTaskView.vue'), meta: { accountType: 'RIDER' } },
   { path: '/admin/login', name: 'admin-login', component: () => import('@/views/admin/AdminLoginView.vue') },
   {
     path: '/admin',
@@ -111,12 +113,12 @@ router.beforeEach((to) => {
   const type = to.meta.accountType
   if (!type) return true
   if (!getToken()) {
-    const loginPath = type === 'MERCHANT' ? '/merchant/login' : type === 'ADMIN' ? '/admin/login' : '/login'
+    const loginPath = type === 'MERCHANT' ? '/merchant/login' : type === 'ADMIN' ? '/admin/login' : type === 'RIDER' ? '/rider/login' : '/login'
     return { path: loginPath, query: { redirect: to.fullPath } }
   }
   if (getAccountType() !== type) {
     const current = getAccountType()
-    return current === 'MERCHANT' ? '/merchant' : current === 'ADMIN' ? '/admin' : '/home'
+    return current === 'MERCHANT' ? '/merchant' : current === 'ADMIN' ? '/admin' : current === 'RIDER' ? '/rider' : '/home'
   }
   return true
 })
