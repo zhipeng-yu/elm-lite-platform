@@ -14,13 +14,18 @@ import java.util.Set;
 public record OrderRequest(
         @NotNull(message = "请选择收货地址") @Positive(message = "地址ID必须为正整数") Long addressId,
         @NotEmpty(message = "请选择购物车商品") List<@NotNull @Positive Long> cartItemIds,
-        @Size(max = 255, message = "备注不能超过255位") String remark) {
+        @Size(max = 255, message = "备注不能超过255位") String remark,
+        @Positive(message = "优惠券ID必须为正整数") Long userCouponId) {
+
+    public OrderRequest(Long addressId, List<Long> cartItemIds, String remark) {
+        this(addressId, cartItemIds, remark, null);
+    }
 
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static OrderRequest from(JsonNode body) {
         if (!body.isObject()) throw new IllegalArgumentException("订单请求必须为对象");
         body.fieldNames().forEachRemaining(name -> {
-            if (!Set.of("addressId", "cartItemIds", "remark").contains(name)) {
+            if (!Set.of("addressId", "cartItemIds", "remark", "userCouponId").contains(name)) {
                 throw new IllegalArgumentException("不支持的订单字段");
             }
         });
@@ -36,7 +41,8 @@ public record OrderRequest(
             throw new IllegalArgumentException("备注必须为字符串");
         }
         String text = remark == null || remark.isNull() ? null : remark.textValue().strip();
-        return new OrderRequest(id(body.get("addressId")), ids, text == null || text.isEmpty() ? null : text);
+        return new OrderRequest(id(body.get("addressId")), ids, text == null || text.isEmpty() ? null : text,
+                id(body.get("userCouponId")));
     }
 
     private static Long id(JsonNode value) {

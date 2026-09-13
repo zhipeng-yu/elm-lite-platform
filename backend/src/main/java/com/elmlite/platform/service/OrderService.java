@@ -41,11 +41,12 @@ public class OrderService {
     private final ShopMapper shops;
     private final ProductMapper products;
     private final CheckoutService checkout;
+    private final CouponService coupons;
     private final Validator validator;
 
     public OrderService(OrderMapper orders, OrderItemMapper items, UserService users, UserMapper userMapper,
                         AddressService addresses, CartItemMapper carts, ShopMapper shops,
-                        ProductMapper products, CheckoutService checkout, Validator validator) {
+                        ProductMapper products, CheckoutService checkout, CouponService coupons, Validator validator) {
         this.orders = orders;
         this.items = items;
         this.users = users;
@@ -55,6 +56,7 @@ public class OrderService {
         this.shops = shops;
         this.products = products;
         this.checkout = checkout;
+        this.coupons = coupons;
         this.validator = validator;
     }
 
@@ -106,7 +108,13 @@ public class OrderService {
         if (productAmount.compareTo(shop.getStartPrice()) < 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "商品金额未达到起送价");
         }
-        BigDecimal total = productAmount.add(shop.getDeliveryPrice());
+        long discountCent = 0;
+        if (request.userCouponId() != null) {
+            discountCent = coupons.consumeCoupon(userId, request.userCouponId(), shopId,
+                    productAmount.movePointRight(2).longValueExact()).discountAmountCent();
+        }
+        BigDecimal discount = BigDecimal.valueOf(discountCent, 2);
+        BigDecimal total = productAmount.subtract(discount).add(shop.getDeliveryPrice());
         BigDecimal maximum = new BigDecimal("99999999.99");
         if (productAmount.compareTo(maximum) > 0 || total.compareTo(maximum) > 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "订单金额超出支持范围");
@@ -117,10 +125,12 @@ public class OrderService {
         order.setUserId(userId);
         order.setShopId(shopId);
         order.setAddressId(address.getId());
+        order.setUserCouponId(request.userCouponId());
         order.setReceiverName(address.getReceiverName());
         order.setReceiverPhone(address.getReceiverPhone());
         order.setDeliveryAddress(address.getAddressDetail());
         order.setProductAmount(productAmount);
+        order.setDiscountAmount(discount);
         order.setDeliveryFee(shop.getDeliveryPrice());
         order.setTotalAmount(total);
         order.setOrderStatus(0);
@@ -175,6 +185,7 @@ public class OrderService {
                 throw new BusinessException(HttpStatus.CONFLICT, "库存恢复失败");
             }
         }
+        if (order.getUserCouponId() != null) coupons.returnCoupon(userId, order.getUserCouponId());
         if (orders.updateStatus(id, 0, 5) != 1) {
             throw new BusinessException(HttpStatus.CONFLICT, "订单状态已变化");
         }
@@ -200,13 +211,14 @@ public class OrderService {
 
     public record Detail(Long id, String orderNo, Long shopId, Integer orderStatus, Long totalAmountCent,
                          OffsetDateTime createdAt, String receiverName, String receiverPhone, String deliveryAddress,
-                         Long productAmountCent, Long deliveryFeeCent, String remark, List<Item> items) {
+                         Long productAmountCent, Long discountAmountCent, Long deliveryFeeCent, String remark, List<Item> items) {
         static Detail from(Order order, List<Item> lines) {
             return new Detail(order.getId(), order.getOrderNo(), order.getShopId(), order.getOrderStatus(),
                     order.getTotalAmount().movePointRight(2).longValueExact(),
                     order.getCreatedAt().atOffset(ZoneOffset.ofHours(8)), order.getReceiverName(),
                     order.getReceiverPhone(), order.getDeliveryAddress(),
                     order.getProductAmount().movePointRight(2).longValueExact(),
+                    order.getDiscountAmount().movePointRight(2).longValueExact(),
                     order.getDeliveryFee().movePointRight(2).longValueExact(), order.getRemark(), lines);
         }
     }
