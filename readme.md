@@ -32,6 +32,8 @@
 | 首页与店铺浏览 | <http://127.0.0.1:5180/home>；无需登录，可搜索店铺、筛选及排序 |
 | 用户注册与登录 | <http://127.0.0.1:5180/register> / <http://127.0.0.1:5180/login>；自行注册演示账号，再展示地址、购物车和下单 |
 | 商家入口 | <http://127.0.0.1:5180/merchant/login>；可切换注册，登录后进入工作台，创建店铺、分类和商品 |
+| 骑手入口 | <http://127.0.0.1:5180/rider/login>；注册或登录后领取制作中订单并完成配送 |
+| 管理员入口 | <http://127.0.0.1:5180/admin/login>；需通过环境变量初始化管理员账号 |
 
 电脑端直接展示完整窗口；展示手机布局时，在 Edge/Chrome 按 `F12`，再按 `Ctrl+Shift+M` 切换设备模拟，设置约 `390 × 844`。当前服务只监听本机，手机设备模拟在电脑浏览器中进行；实体手机不能通过该 `127.0.0.1` 地址访问电脑服务。
 
@@ -61,7 +63,7 @@ Set-Location .\backend
 
 `verify` 会运行测试并在 `backend/target/site/jacoco/index.html` 生成覆盖率报告。测试使用 H2 的 MySQL 兼容模式，不依赖本地 MySQL。
 
-启动应用前需要依次执行 `database/migration/` 中的 V1、V2 迁移，再导入 `database/init/V1__seed_data.sql`，并在当前终端提供本机数据库凭据：
+启动应用前需要按版本号依次执行 `database/migration/` 中的全部迁移，再导入 `database/init/V1__seed_data.sql`，并在当前终端提供本机数据库凭据：
 
 ```powershell
 $env:DB_USERNAME = '<本机 MySQL 用户名>'

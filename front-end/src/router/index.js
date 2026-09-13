@@ -82,6 +82,12 @@ const routes = [
         component: () => import('@/views/order/CheckoutView.vue')
       },
       {
+        path: 'coupons/mine',
+        name: 'my-coupons',
+        meta: { accountType: 'USER' },
+        component: () => import('@/views/coupon/MyCouponsView.vue')
+      },
+      {
         path: 'orders',
         name: 'orders',
         meta: { accountType: 'USER' },

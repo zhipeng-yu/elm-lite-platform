@@ -29,6 +29,9 @@ public class Order {
     @TableField("address_id")
     private Long addressId;
 
+    @TableField("user_coupon_id")
+    private Long userCouponId;
+
     @TableField("receiver_name")
     private String receiverName;
 
@@ -40,6 +43,9 @@ public class Order {
 
     @TableField("product_amount")
     private BigDecimal productAmount;
+
+    @TableField("discount_amount")
+    private BigDecimal discountAmount;
 
     @TableField("delivery_fee")
     private BigDecimal deliveryFee;
@@ -103,6 +109,10 @@ public class Order {
         this.addressId = addressId;
     }
 
+    public Long getUserCouponId() { return userCouponId; }
+
+    public void setUserCouponId(Long userCouponId) { this.userCouponId = userCouponId; }
+
     public String getReceiverName() {
         return receiverName;
     }
@@ -134,6 +144,10 @@ public class Order {
     public void setProductAmount(BigDecimal productAmount) {
         this.productAmount = productAmount;
     }
+
+    public BigDecimal getDiscountAmount() { return discountAmount; }
+
+    public void setDiscountAmount(BigDecimal discountAmount) { this.discountAmount = discountAmount; }
 
     public BigDecimal getDeliveryFee() {
         return deliveryFee;

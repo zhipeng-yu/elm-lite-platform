@@ -20,6 +20,14 @@ const myCouponsSource = await readFile(
   new URL('../src/views/coupon/MyCouponsView.vue', import.meta.url),
   'utf8'
 )
+const routerSource = await readFile(
+  new URL('../src/router/index.js', import.meta.url),
+  'utf8'
+)
+const layoutSource = await readFile(
+  new URL('../src/layouts/DefaultLayout.vue', import.meta.url),
+  'utf8'
+)
 
 test('结算只展示当前店铺且达到门槛的可用券', () => {
   const coupons = [
@@ -59,6 +67,13 @@ test('前端接入我的券和下单 userCouponId', () => {
   assert.match(checkoutSource, /userCouponId/)
   assert.match(checkoutSource, /discountAmountCent/)
   assert.match(myCouponsSource, /listMyCoupons/)
+})
+
+test('用户可以从账户菜单进入我的优惠券页面', () => {
+  assert.match(routerSource, /path:\s*'coupons\/mine'/)
+  assert.match(routerSource, /MyCouponsView\.vue/)
+  assert.match(routerSource, /path:\s*'coupons\/mine'[\s\S]*?accountType:\s*'USER'/)
+  assert.match(layoutSource, /to="\/coupons\/mine"[^>]*>我的优惠券/)
 })
 
 test('结算校验优惠券有效期边界', () => {
