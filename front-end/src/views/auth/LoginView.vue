@@ -38,7 +38,10 @@
           <el-button @click="router.push('/register')">去注册</el-button>
         </el-form-item>
       </el-form>
-      <p class="tip"><router-link to="/merchant/login">我是商家，进入商家服务</router-link></p>
+      <nav class="role-links" aria-label="其他身份登录">
+        <router-link to="/merchant/login">商家登录</router-link>
+        <router-link to="/rider/login">骑手登录</router-link>
+      </nav>
     </el-card>
   </div>
 </template>
@@ -106,8 +109,18 @@ async function handleSubmit() {
   margin-bottom: 16px;
 }
 
-.tip {
-  color: #909399;
-  font-size: 12px;
+.role-links {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.role-links a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  color: var(--brand);
+  font-size: 14px;
 }
 </style>
