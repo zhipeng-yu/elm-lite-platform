@@ -58,7 +58,7 @@ checks.append('用户注册登录、个人信息、身份权限隔离')
 
 item = call('POST', '/cart/items', {'productId': pid, 'quantity': 1}, u1, 201)
 call('POST', '/orders', {'addressId': a1['id'], 'cartItemIds': [item['id']]}, u1, 409)
-assert call('GET', f'/products/{pid}')['stock'] == 5
+assert call('GET', f'/products/{pid}')['stock'] == 4
 assert len(call('GET', '/cart/items', token=u1)) == 1
 call('PATCH', f'/merchant/shops/{sid}', {'businessStatus': 1}, merchant)
 order = call('POST', '/orders', {'addressId': a1['id'], 'cartItemIds': [item['id']]}, u1, 201)
@@ -77,11 +77,14 @@ call('PATCH', f"/merchant/categories/{category['id']}", {'status': 0}, merchant)
 assert call('GET', f'/shops/{sid}/categories') == []
 assert call('GET', f'/merchant/shops/{sid}/categories', token=merchant)[0]['status'] == 0
 call('PATCH', f"/merchant/categories/{category['id']}", {'status': 1}, merchant)
-call('PATCH', f'/merchant/products/{pid}', {'status': 1, 'stock': 1}, merchant)
+call('PATCH', f'/merchant/products/{pid}', {'status': 1, 'stock': 2}, merchant)
 checks.append('下架商品与停用分类可在管理端找回并恢复')
 
 a1 = address(u1)
 items = [call('POST', '/cart/items', {'productId': pid, 'quantity': 1}, token, 201) for token in [u1, u2]]
+assert call('GET', f'/products/{pid}')['stock'] == 0
+call('POST', '/cart/items', {'productId': pid, 'quantity': 1}, u1, expected=409)
+call('PATCH', f'/merchant/products/{pid}', {'stock': 1}, merchant)
 def checkout(args):
     token, addr, cart = args
     try:
@@ -94,7 +97,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
 assert sum(result is not None for result in results) == 1
 assert call('GET', f'/products/{pid}')['stock'] == 0
 assert sum(len(call('GET', '/cart/items', token=token)) for token in [u1, u2]) == 1
-checks.append('真实并发争抢最后一件库存：一单成功、一单409，无超卖，失败购物车保留')
+checks.append('跨用户购物车占用与真实并发争抢最后一件库存：一单成功、一单409，无超卖')
+for token in [u1, u2]:
+    for remaining in call('GET', '/cart/items', token=token):
+        call('DELETE', f"/cart/items/{remaining['id']}", token=token)
 
 with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
     list(pool.map(address, [u1, u1]))
