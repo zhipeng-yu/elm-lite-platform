@@ -25,3 +25,6 @@ INSERT INTO product_detail_image (
 ) VALUES
     (1, 1, 'https://example.com/beef-detail-2.jpg', 1),
     (2, 1, '/images/products/beef-detail-1.jpg', 0);
+
+INSERT INTO cart_item (id, user_id, product_id, quantity)
+VALUES (1, 10, 1, 4), (2, 20, 1, 3);
