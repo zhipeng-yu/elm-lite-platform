@@ -1,7 +1,9 @@
-# 独立本机演示：复用已安装 MySQL / JDK / Node，数据只写 backend/target/local-demo。
+# Keep runtime data outside target; use ASCII so Windows PowerShell 5.1 preserves the next line.
+param([switch]$Verify)
+Write-Host "Stage 2 HTTP verification requested: $($Verify.IsPresent)"
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
-$demoDir = Join-Path $repo 'backend/target/local-demo'
+$demoDir = Join-Path $repo '.local-demo'
 $mysql = (Get-Command mysql.exe).Source
 $mysqld = (Get-Command mysqld.exe).Source
 $java = (Get-Command java.exe).Source
@@ -11,6 +13,15 @@ $children = @()
 foreach ($port in @(13317, 18081, 5180)) {
     $probe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $port)
     try { $probe.Start() } finally { $probe.Stop() }
+}
+$legacyDir = Join-Path $repo 'backend/target/local-demo'
+if (Test-Path -LiteralPath $legacyDir) {
+    if (Test-Path -LiteralPath $demoDir) { throw 'Both .local-demo and backend/target/local-demo exist; preserve both and resolve which database to use before starting.' }
+    $resolvedLegacy = (Resolve-Path -LiteralPath $legacyDir).Path
+    $expectedLegacy = [IO.Path]::GetFullPath((Join-Path $repo 'backend/target/local-demo'))
+    if ($resolvedLegacy -ne $expectedLegacy -or ((Get-Item -LiteralPath $legacyDir).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Refusing to move an unexpected demo path.' }
+    Move-Item -LiteralPath $resolvedLegacy -Destination ([IO.Path]::GetFullPath($demoDir))
+    Write-Host 'Existing demo database and logs moved to .local-demo.'
 }
 New-Item -ItemType Directory -Force $demoDir | Out-Null
 
@@ -78,7 +89,9 @@ try {
     $bytes = New-Object byte[] 48
     [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
     $env:JWT_SECRET = [Convert]::ToBase64String($bytes)
-    $jar = Join-Path $repo 'backend/target/elm-lite-platform-0.0.1-SNAPSHOT.jar'
+    # Run a copy so rebuilding target does not replace a running JVM's classes on Windows.
+    $jar = Join-Path $demoDir 'backend-demo.jar'
+    Copy-Item -LiteralPath (Join-Path $repo 'backend/target/elm-lite-platform-0.0.1-SNAPSHOT.jar') -Destination $jar
     $children += Start-Process $java -ArgumentList @('-jar', "`"$jar`"", '--server.address=127.0.0.1', '--server.port=18081', '--spring.datasource.password=', '--logging.level.root=INFO', '--logging.level.org.springframework=INFO') -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $demoDir 'backend.log') -RedirectStandardError (Join-Path $demoDir 'backend-error.log')
     $env:API_PROXY_TARGET = 'http://127.0.0.1:18081'
     $env:VITE_USE_MOCK = 'false'
@@ -93,6 +106,10 @@ try {
     }
     if (!$ready) { throw "Demo startup failed; see logs in $demoDir" }
     Write-Host 'Demo ready: http://127.0.0.1:5180'
+    if ($Verify) {
+        & python (Join-Path $repo 'scripts/stage2-smoke.py')
+        if ($LASTEXITCODE -ne 0) { throw 'Stage 2 verification failed.' }
+    }
     Write-Host 'Use the UI to register a new user and merchant. Data survives restart; sign in again after restarting.'
     Read-Host 'Press Enter to stop the demo' | Out-Null
 } finally {

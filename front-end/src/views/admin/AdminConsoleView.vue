@@ -119,7 +119,7 @@
       </el-tab-pane>
     </el-tabs>
 
-    <el-dialog v-model="orderDialogVisible" title="订单详情" width="560px">
+    <el-dialog v-model="orderDialogVisible" title="订单详情" width="min(560px, calc(100vw - 24px))">
       <div v-if="orderDetail" class="order-detail">
         <p>订单号：{{ orderDetail.orderNo }}</p>
         <p>
@@ -142,7 +142,8 @@
           </el-table-column>
         </el-table>
         <p class="amount">
-          商品 ¥{{ formatPriceCent(orderDetail.productAmountCent) }} +
+          商品 ¥{{ formatPriceCent(orderDetail.productAmountCent) }} −
+          优惠 ¥{{ formatPriceCent(orderDetail.discountAmountCent ?? 0) }} +
           配送 ¥{{ formatPriceCent(orderDetail.deliveryFeeCent) }} =
           <b>¥{{ formatPriceCent(orderDetail.totalAmountCent) }}</b>
         </p>
@@ -337,6 +338,7 @@ onMounted(() => {
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 12px;
 }

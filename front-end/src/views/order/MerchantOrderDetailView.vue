@@ -12,7 +12,7 @@
         <el-descriptions-item label="备注">{{ order.remark || '无' }}</el-descriptions-item>
       </el-descriptions>
       <div class="table-scroll"><table><thead><tr><th>商品</th><th>单价</th><th>数量</th><th>小计</th></tr></thead><tbody><tr v-for="item in order.items" :key="item.productId"><td>{{ item.productName }}</td><td>¥{{ formatPriceCent(item.unitPriceCent) }}</td><td>{{ item.quantity }}</td><td>¥{{ formatPriceCent(item.subtotalCent) }}</td></tr></tbody></table></div>
-      <div class="amounts"><p>商品 ¥{{ formatPriceCent(order.productAmountCent) }}</p><p>配送费 ¥{{ formatPriceCent(order.deliveryFeeCent) }}</p><strong>合计 ¥{{ formatPriceCent(order.totalAmountCent) }}</strong></div>
+      <div class="amounts"><p>商品 ¥{{ formatPriceCent(order.productAmountCent) }}</p><p v-if="order.discountAmountCent > 0">优惠 −¥{{ formatPriceCent(order.discountAmountCent) }}</p><p>配送费 ¥{{ formatPriceCent(order.deliveryFeeCent) }}</p><strong>合计 ¥{{ formatPriceCent(order.totalAmountCent) }}</strong></div>
       <div class="actions"><button v-if="order.orderStatus === 0" class="primary" :disabled="acting" @click="act('confirm')">确认订单</button><button v-if="order.orderStatus === 1" class="primary" :disabled="acting" @click="act('prepare')">开始制作</button></div>
     </section>
   </div>

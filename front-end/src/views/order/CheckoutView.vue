@@ -19,7 +19,7 @@
           <template #header>
             <div class="panel-header">
               <span>收货地址</span>
-              <el-button link type="primary" @click="router.push('/addresses')">管理地址</el-button>
+              <el-button link type="primary" @click="router.push('/addresses?from=checkout')">管理地址</el-button>
             </div>
           </template>
           <el-empty
@@ -27,7 +27,7 @@
             description="暂无收货地址"
             :image-size="60"
           >
-            <el-button type="primary" @click="router.push('/addresses')">去新增地址</el-button>
+            <el-button type="primary" @click="router.push('/addresses?from=checkout')">去新增地址</el-button>
           </el-empty>
           <el-radio-group v-else v-model="addressId" class="address-group">
             <el-radio v-for="address in addresses" :key="address.id" :value="address.id" border>
@@ -43,7 +43,7 @@
           <el-empty v-if="cartItems.length === 0" description="购物车暂无商品"><el-button @click="router.push('/shops')">去选购</el-button></el-empty>
           <ul class="item-list">
             <li v-for="item in cartItems" :key="item.id">
-              <el-checkbox :model-value="selectedIds.includes(item.id)" @change="toggle(item.id)" />
+              <el-checkbox :model-value="selectedIds.includes(item.id)" :aria-label="`选择 ${item.productName}`" :disabled="submitting" @change="toggle(item.id)" />
               <span class="item-name">{{ item.productName }} ×{{ item.quantity }}</span>
               <span class="item-price">¥{{ formatPriceCent(item.subtotalCent) }}</span>
             </li>
@@ -63,7 +63,7 @@
               <el-button
                 link
                 type="primary"
-                @click="router.push('/coupons')"
+                @click="router.push('/coupons/mine?from=checkout')"
               >
                 查看我的券
               </el-button>
@@ -106,8 +106,10 @@
         </el-card>
 
         <div class="footer">
+          <p v-if="submitHint" role="status">{{ submitHint }}</p>
+          <p v-if="submitError" role="alert" class="error-text">{{ submitError }} <el-button link @click="load">刷新订单信息</el-button> <el-button link @click="router.push('/orders')">查看是否已下单</el-button></p>
           <el-button type="primary" :loading="submitting" :disabled="!canSubmit" @click="handleSubmit">
-            提交订单
+            提交订单 · ¥{{ formatPriceCent(payableTotalCent) }}
           </el-button>
         </div>
       </template>
@@ -116,7 +118,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 
@@ -140,6 +142,8 @@ const selectedIds = ref([])
 const remark = ref('')
 const myCoupons = ref([])
 const selectedUserCouponId = ref(null)
+const submitError = ref('')
+let initialized = false
 
 const selectedItems = computed(() =>
   cartItems.value.filter((item) => selectedIds.value.includes(item.id))
@@ -196,12 +200,17 @@ function couponOptionLabel(coupon) {
   )}减¥${formatPriceCent(coupon.discountCent)}`
 }
 
-const canSubmit = computed(
-  () =>
-    addressId.value != null &&
-    selectedIds.value.length > 0 &&
-    !submitting.value
-)
+const submitHint = computed(() => {
+  if (loading.value) return '正在更新订单信息…'
+  if (!selectedItems.value.length) return '请选择要购买的商品'
+  if (selectedItems.value.some(item => item.status !== 1 || item.stock < item.quantity)) return '部分商品已下架或库存不足，请返回购物车调整'
+  if (shop.value?.businessStatus !== 1) return '店铺休息中，请营业后再下单'
+  const shortfall = (shop.value?.startPriceCent ?? 0) - selectedTotalCent.value
+  if (shortfall > 0) return `还差 ¥${formatPriceCent(shortfall)} 起送，请返回店铺加购`
+  if (addressId.value == null) return '请选择收货地址'
+  return ''
+})
+const canSubmit = computed(() => !submitHint.value && !errorMsg.value && !submitting.value)
 
 function toggle(id) {
   if (selectedIds.value.includes(id)) {
@@ -223,10 +232,14 @@ async function load() {
     cartItems.value = cartList
     shop.value = cartList.length > 0 ? await fetchShop(cartList[0].shopId) : null
     myCoupons.value = cartList.length > 0 ? await listMyCoupons() : []
-    selectedUserCouponId.value = null
     const defaultAddress = addressList.find((address) => address.isDefault === 1)
-    addressId.value = defaultAddress ? defaultAddress.id : addressList[0]?.id ?? null
-    selectedIds.value = cartList.map((item) => item.id)
+    addressId.value = initialized
+      ? (addressList.some(address => address.id === addressId.value) ? addressId.value : null)
+      : defaultAddress?.id ?? addressList[0]?.id ?? null
+    selectedIds.value = initialized
+      ? selectedIds.value.filter(id => cartList.some(item => item.id === id))
+      : cartList.map(item => item.id)
+    initialized = true
   } catch (error) {
     errorMsg.value = error.response?.data?.msg || '加载失败，请稍后重试'
   } finally {
@@ -239,6 +252,7 @@ async function handleSubmit() {
     return
   }
   submitting.value = true
+  submitError.value = ''
   try {
     const payload = {
       addressId: addressId.value,
@@ -253,15 +267,18 @@ async function handleSubmit() {
 
     const order = await createOrder(payload)
     ElMessage.success('下单成功')
-    router.push(`/orders/${order.id}`)
+    initialized = false
+    remark.value = ''
+    selectedUserCouponId.value = null
+    router.replace(`/orders/${order.id}`)
   } catch (error) {
-    ElMessage.error(error.response?.data?.msg || '下单失败，请稍后重试')
+    submitError.value = error.response?.data?.msg || '网络暂时中断，尚未确认下单结果，请先查看订单再重试'
   } finally {
     submitting.value = false
   }
 }
 
-onMounted(load)
+onActivated(load)
 </script>
 
 <style scoped>
@@ -337,5 +354,16 @@ onMounted(load)
 
 .footer {
   text-align: right;
+}
+
+.footer p { margin-bottom: 12px; line-height: 1.6; }
+.address-group :deep(.el-radio) { height: auto; min-height: 48px; margin: 0; padding: 12px; white-space: normal; }
+.address-group :deep(.el-radio__label) { min-width: 0; white-space: normal; overflow-wrap: anywhere; line-height: 1.6; }
+.address-detail { display: block; margin: 4px 0; }
+.item-name { min-width: 0; overflow-wrap: anywhere; }
+.item-price { flex-shrink: 0; }
+@media (max-width: 600px) {
+  .footer { position: sticky; bottom: calc(66px + env(safe-area-inset-bottom)); z-index: 6; background: white; padding: 12px; border-radius: 10px; box-shadow: 0 2px 12px #0001; }
+  .footer > .el-button { width: 100%; min-height: 44px; }
 }
 </style>

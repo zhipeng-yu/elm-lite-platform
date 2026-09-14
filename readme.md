@@ -37,7 +37,7 @@
 
 电脑端直接展示完整窗口；展示手机布局时，在 Edge/Chrome 按 `F12`，再按 `Ctrl+Shift+M` 切换设备模拟，设置约 `390 × 844`。当前服务只监听本机，手机设备模拟在电脑浏览器中进行；实体手机不能通过该 `127.0.0.1` 地址访问电脑服务。
 
-打不开页面时，先确认终端已显示 `Demo ready` 且仍在运行；服务已运行就直接打开网址，不要重复启动。若提示端口占用，先回到原启动终端按 Enter 停止；若启动失败，查看 `backend/target/local-demo/` 中的 `verify.log`、`backend.log`、`frontend.log` 及对应错误日志。详细操作顺序见 [本地演示指南](docs/demo.md)。
+打不开页面时，先确认终端已显示 `Demo ready` 且仍在运行；服务已运行就直接打开网址，不要重复启动。若提示端口占用，先回到原启动终端按 Enter 停止；若启动失败，查看 `.local-demo/` 中的 `verify.log`、`backend.log`、`frontend.log` 及对应错误日志。演示数据也存放在此，不受 Maven `clean` 影响；旧目录存在时脚本会迁移并保留数据。管理员初始化、四身份流程和数据库回归见 [本地演示指南](docs/demo.md)。
 
 ## 技术栈
 
@@ -61,7 +61,7 @@ Set-Location .\backend
 .\mvnw.cmd verify
 ```
 
-`verify` 会运行测试并在 `backend/target/site/jacoco/index.html` 生成覆盖率报告。测试使用 H2 的 MySQL 兼容模式，不依赖本地 MySQL。
+`verify` 会运行测试并在 `backend/target/site/jacoco/index.html` 生成覆盖率报告，同时检查每个顶层 `*Service` 类的行、方法覆盖率均不低于 90%。接口是否都有测试仍须逐项核对，不能把 JaCoCo 百分比当作接口覆盖率。测试使用 H2 的 MySQL 兼容模式，不依赖本地 MySQL；真实 MySQL 补充检查见演示指南。
 
 启动应用前需要按版本号依次执行 `database/migration/` 中的全部迁移，再导入 `database/init/V1__seed_data.sql`，并在当前终端提供本机数据库凭据：
 

@@ -1,5 +1,6 @@
 <template>
   <div class="addresses">
+    <el-button v-if="route.query.from === 'checkout'" link type="primary" @click="router.push('/checkout')">← 返回结算</el-button>
     <div class="header">
       <h2>收货地址</h2>
       <el-button type="primary" :disabled="loading || submitting" @click="openCreate">
@@ -31,11 +32,12 @@
         </li>
       </ul>
     </div>
+    <el-button v-if="errorMsg" :disabled="loading" @click="load">重新加载</el-button>
 
     <el-dialog
       v-model="dialogVisible"
       :title="editingId ? '编辑地址' : '新增地址'"
-      width="480px"
+      width="min(480px, calc(100vw - 24px))"
       :show-close="!submitting"
       :close-on-click-modal="!submitting"
       :close-on-press-escape="!submitting"
@@ -46,7 +48,7 @@
           <el-input v-model="form.receiverName" placeholder="最长 50 个字符" />
         </el-form-item>
         <el-form-item label="手机号" prop="receiverPhone" :error="fieldErrors.receiverPhone">
-          <el-input v-model="form.receiverPhone" placeholder="11 位手机号" />
+          <el-input v-model="form.receiverPhone" type="tel" inputmode="numeric" maxlength="11" autocomplete="tel" placeholder="11 位手机号" />
         </el-form-item>
         <el-form-item label="详细地址" prop="addressDetail" :error="fieldErrors.addressDetail">
           <el-input
@@ -76,6 +78,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRoute, useRouter } from 'vue-router'
 
 import {
   createAddress,
@@ -85,6 +88,8 @@ import {
 } from '@/api/address'
 
 const loading = ref(false)
+const route = useRoute()
+const router = useRouter()
 const errorMsg = ref('')
 const addresses = ref([])
 
@@ -262,6 +267,7 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .receiver {
@@ -269,6 +275,7 @@ onMounted(load)
 }
 
 .detail {
+  overflow-wrap: anywhere;
   color: #606266;
   margin: 6px 0;
 }

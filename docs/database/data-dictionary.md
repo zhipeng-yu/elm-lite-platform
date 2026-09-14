@@ -2,7 +2,7 @@
 
 ## 1. 基本信息
 
-* 数据库：MySQL 8.4；下列字段对应已合并并在全新数据库验证通过的 V1～V7 迁移
+* 数据库：MySQL 8.4；下列字段对应 V1—V7 迁移，共 14 张表
 * 字符集：utf8mb4
 * 存储引擎：InnoDB
 * 主键：BIGINT 自增
@@ -93,7 +93,7 @@
 | image_url  | VARCHAR(255)   | NN          | 详情图片地址 |
 | sort_order | INT UNSIGNED   | NN、默认0   | 显示顺序   |
 
-`product_id` 使用索引 `idx_product_detail_image_product_id`；外键 `fk_product_detail_image_product` 指向 `product(id)`，删除商品时按 `ON DELETE CASCADE` 删除详情图。
+`product_id` 使用索引 `idx_product_detail_image_product_id`；外键 `fk_product_detail_image_product` 指向 `product(id)`，删除商品时按 `ON DELETE CASCADE` 删除详情图。接口最多 3 张是 Service 约束，不是数据库行数约束；只接受有效 HTTP(S) 或本站 `/images/` 路径。
 
 ## 8. cart_item 购物车明细表
 
@@ -149,6 +149,8 @@
 | created_at       | TIMESTAMP              | NN、自动生成   | 创建时间       |
 | updated_at       | DATETIME               | 可空        | 最后修改时间     |
 
+V7 新增 `idx_orders_user_coupon_id(user_coupon_id)`，`discount_amount` 非负、默认 0，旧订单无优惠。用户券关联删除时置空，但实际优惠金额快照不变；当前没有删除用户券的公开接口。
+
 订单状态：
 
 | 状态值 | 含义  |
@@ -202,7 +204,7 @@
 | created_at       | TIMESTAMP                | NN、自动生成 | 创建时间         |
 | updated_at       | DATETIME                 | 可空        | 最后修改时间     |
 
-`shop_id` 指向 `shop(id)`；查询索引为 `idx_coupon_shop_id` 和联合索引 `idx_coupon_shop_enabled_time(shop_id, enabled, starts_at, expires_at)`。
+`shop_id` 指向 `shop(id)`；查询索引为 `idx_coupon_shop_id` 和联合索引 `idx_coupon_shop_enabled_time(shop_id, enabled, starts_at, expires_at)`。金额和有效期发行后不可修改；有效时间为 `starts_at <= 当前时间 < expires_at`。
 
 ## 14. user_coupon 用户优惠券表
 
@@ -216,6 +218,8 @@
 | updated_at | DATETIME   | 可空        | 最后修改时间     |
 
 `user_id`、`coupon_id` 分别指向 `users(id)`、`coupon(id)`；唯一索引 `uk_user_coupon_user_coupon(user_id, coupon_id)` 保证同一用户不能重复领取同一优惠券。查询索引为 `idx_user_coupon_user_status(user_id, status)` 和 `idx_user_coupon_coupon_id(coupon_id)`。
+
+过期、停用是结合券模板计算的展示状态，不另存入 `user_coupon.status`；返券只改使用状态，不延长有效期。
 
 ## 15. rider 骑手表
 
@@ -245,9 +249,13 @@
 10. 分类、商品创建时默认状态为 1；分类停用和商品下架均修改状态，不提供物理删除接口。库存为 0 可以保持上架。
 11. 下单时校验店铺营业、商品上架、实时库存和起送价；库存条件扣减、订单及明细写入、选中购物车项清理处于同一事务，失败全部回滚。商品金额及订单总金额不得超过现有 `DECIMAL(10,2)` 上限，不扩展字段精度。
 12. 每个订单最多使用一张属于当前用户、当前店铺且处于有效期内的未使用优惠券；订单保存 `discount_amount` 快照。
-13. 取消待处理订单时，订单状态、库存恢复和优惠券返还处于同一事务；优惠券恢复为未使用，但原到期时间不延长。返还后的同一 `user_coupon` 可再次用于新订单，因此可被多条历史订单引用。
+13. 取消待处理订单时，订单状态、库存恢复和优惠券返还处于同一事务；优惠券恢复为未使用，但原到期时间不延长。返还后的同一 `user_coupon` 可再次用于新订单，因此可被多条历史订单引用，不能给 `orders.user_coupon_id` 加唯一约束；重复取消旧订单不得返还新订单正在使用的券。
 14. 骑手只能领取制作中的未分配订单；领取后绑定 `rider_id`，订单仍保持制作中，随后按制作中（2）→配送中（3）→已完成（4）流转。
 15. `orders.address_id` 和 `orders.user_coupon_id` 删除时按 `ON DELETE SET NULL` 清空；商品详情图随商品按 `ON DELETE CASCADE` 删除；其他外键均为 `NO ACTION`。
+
+16. 起送价和券门槛按优惠前商品金额判断；实际优惠不超过商品金额，不抵配送费。用券核销参加下单事务，失败全部回滚。
+
+全部迁移按数字版本顺序应用，不修改已应用的迁移；数据库一致性检查见 [演示指南](../demo.md)。
 
 ## 17. 缩写说明
 

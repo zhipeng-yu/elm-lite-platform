@@ -160,19 +160,19 @@ public class AdminController {
 
     public record OrderView(Long id, String orderNo, Long userId, Long shopId,
                             Integer orderStatus, long productAmountCent,
-                            long deliveryFeeCent, long totalAmountCent,
+                            long discountAmountCent, long deliveryFeeCent, long totalAmountCent,
                             LocalDateTime createdAt) {
         static OrderView of(Order order) {
             return new OrderView(order.getId(), order.getOrderNo(), order.getUserId(),
                     order.getShopId(), order.getOrderStatus(),
-                    toCent(order.getProductAmount()), toCent(order.getDeliveryFee()),
+                    toCent(order.getProductAmount()), toCent(order.getDiscountAmount()), toCent(order.getDeliveryFee()),
                     toCent(order.getTotalAmount()), order.getCreatedAt());
         }
     }
 
     public record OrderDetailView(Long id, String orderNo, Long userId, Long shopId,
                                   Integer orderStatus, long productAmountCent,
-                                  long deliveryFeeCent, long totalAmountCent,
+                                  long discountAmountCent, long deliveryFeeCent, long totalAmountCent,
                                   LocalDateTime createdAt, String receiverName,
                                   String receiverPhone, String deliveryAddress,
                                   String remark, List<ItemView> items) {
@@ -180,7 +180,7 @@ public class AdminController {
             OrderView view = OrderView.of(order);
             return new OrderDetailView(view.id(), view.orderNo(), view.userId(),
                     view.shopId(), view.orderStatus(), view.productAmountCent(),
-                    view.deliveryFeeCent(), view.totalAmountCent(), view.createdAt(),
+                    view.discountAmountCent(), view.deliveryFeeCent(), view.totalAmountCent(), view.createdAt(),
                     order.getReceiverName(), order.getReceiverPhone(),
                     order.getDeliveryAddress(), order.getRemark(), items);
         }

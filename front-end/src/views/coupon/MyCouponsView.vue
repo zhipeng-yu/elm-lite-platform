@@ -1,5 +1,6 @@
 <template>
   <div class="my-coupons">
+    <el-button v-if="route.query.from === 'checkout'" link type="primary" @click="router.push('/checkout')">← 返回结算</el-button>
     <h2>我的优惠券</h2>
 
     <div v-loading="loading">
@@ -44,6 +45,7 @@
             至
             {{ formatTime(coupon.expiresAt) }}
           </p>
+          <el-button v-if="coupon.status === 'AVAILABLE'" type="primary" plain @click="router.push(`/shops/${coupon.shopId}`)">去适用店铺</el-button>
         </el-card>
       </div>
     </div>
@@ -52,6 +54,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import { listMyCoupons } from '@/api/coupon'
 import {
@@ -60,6 +63,8 @@ import {
 import { formatPriceCent } from '@/utils/format'
 
 const loading = ref(false)
+const route = useRoute()
+const router = useRouter()
 const errorMsg = ref('')
 const coupons = ref([])
 

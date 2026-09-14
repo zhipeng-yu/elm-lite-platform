@@ -20,7 +20,7 @@ def literal(value):
 
 
 # 只连接启动脚本创建的独立库，避免把演示数据导入其他本地项目。
-assert Path(sql('SELECT @@datadir')).resolve() == (ROOT / 'backend/target/local-demo/mysql').resolve(), 'Not the isolated demo database'
+assert Path(sql('SELECT @@datadir')).resolve() == (ROOT / '.local-demo/mysql').resolve(), 'Not the isolated demo database'
 merchant_id = int(sql("SELECT id FROM merchant WHERE account='demo_merchant'"))
 before = int(sql('SELECT COUNT(*) FROM shop'))
 existing_names = set(sql('SELECT shop_name FROM shop').splitlines())
@@ -41,7 +41,7 @@ for index in range(5):
 statements.append('COMMIT;')
 sql('\n'.join(statements))
 
-shops = [line.split('\t') for line in sql('SELECT id, shop_name FROM shop ORDER BY id').splitlines()]
+shops = [line.split('\t') for line in sql(f'SELECT id, shop_name FROM shop WHERE merchant_id={merchant_id} ORDER BY id').splitlines()]
 statements = ['START TRANSACTION;']
 for sid, name in shops:
     kind = next((key for key, group in CATALOG.items() if name in group['shops']), 'rice')
@@ -61,6 +61,6 @@ sql('\n'.join(statements))
 
 # 可重复执行的最小校验；不要求卖完或手工下架的商品自动恢复。
 count = int(sql('SELECT COUNT(*) FROM shop'))
-too_small = int(sql('SELECT COUNT(*) FROM (SELECT s.id FROM shop s LEFT JOIN product p ON p.shop_id=s.id GROUP BY s.id HAVING COUNT(p.id)<6) x'))
+too_small = int(sql(f'SELECT COUNT(*) FROM (SELECT s.id FROM shop s LEFT JOIN product p ON p.shop_id=s.id WHERE s.merchant_id={merchant_id} GROUP BY s.id HAVING COUNT(p.id)<6) x'))
 assert count >= 30 and too_small == 0, 'Catalog import incomplete'
-print(f'Demo catalog ready: {count} shops, at least 6 products each; added {added} shops.')
+print(f'Demo catalog ready: {count} shops; demo merchant shops have at least 6 products; added {added} shops.')

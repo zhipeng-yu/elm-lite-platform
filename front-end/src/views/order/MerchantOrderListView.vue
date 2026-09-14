@@ -9,7 +9,7 @@
       <label>订单状态<select v-model="status" :disabled="loading || acting" @change="loadOrders"><option value="">全部</option><option v-for="(text, value) in ORDER_STATUS_TEXT" :key="value" :value="Number(value)">{{ text }}</option></select></label>
       <button class="secondary" :disabled="loading || acting || !shopId" @click="loadOrders">刷新</button>
     </section>
-    <p v-if="error" role="alert" class="error-text">{{ error }} <button class="text-button" @click="load">重新加载</button></p>
+    <p v-if="error" role="alert" class="error-text">{{ error }} <button class="text-button" @click="loadOrders">重新加载</button></p>
     <p v-if="loading" role="status">正在加载订单…</p>
     <section v-else-if="!orders.length" class="surface-card empty-state"><h2>暂无订单</h2><p class="muted">新订单会在刷新后显示。</p></section>
     <section v-else class="surface-card table-scroll">
