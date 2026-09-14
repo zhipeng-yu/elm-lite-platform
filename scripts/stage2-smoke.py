@@ -1,5 +1,6 @@
 """真实 MySQL/HTTP 回归，仅允许本项目 .local-demo 测试库；只生成虚构数据。"""
 import concurrent.futures
+import atexit
 from datetime import datetime, timedelta
 import json
 import os
@@ -42,6 +43,45 @@ call = base['call']
 merchant, user = base['merchant'], base['u1']
 sid, pid, address = base['sid'], base['pid'], base['a1']
 suffix, password = base['suffix'], base['password']
+
+
+def cleanup():
+    """验证结束后只清理本次随机后缀产生的数据。"""
+    sql(f"""
+        START TRANSACTION;
+        CREATE TEMPORARY TABLE cleanup_users (id BIGINT PRIMARY KEY) AS
+          SELECT id FROM users WHERE username IN ('smoke_a_{suffix}', 'smoke_b_{suffix}');
+        CREATE TEMPORARY TABLE cleanup_merchants (id BIGINT PRIMARY KEY) AS
+          SELECT id FROM merchant WHERE account='merchant_{suffix}';
+        CREATE TEMPORARY TABLE cleanup_shops (id BIGINT PRIMARY KEY) AS
+          SELECT id FROM shop WHERE merchant_id IN (SELECT id FROM cleanup_merchants);
+        CREATE TEMPORARY TABLE cleanup_riders (id BIGINT PRIMARY KEY) AS
+          SELECT id FROM rider WHERE username IN ('qa_rider_{suffix}_0', 'qa_rider_{suffix}_1');
+        CREATE TEMPORARY TABLE cleanup_orders (id BIGINT PRIMARY KEY) AS
+          SELECT id FROM orders WHERE user_id IN (SELECT id FROM cleanup_users)
+             OR shop_id IN (SELECT id FROM cleanup_shops)
+             OR rider_id IN (SELECT id FROM cleanup_riders);
+        CREATE TEMPORARY TABLE cleanup_coupons (id BIGINT PRIMARY KEY) AS
+          SELECT id FROM coupon WHERE shop_id IN (SELECT id FROM cleanup_shops);
+        DELETE FROM order_item WHERE order_id IN (SELECT id FROM cleanup_orders);
+        DELETE FROM orders WHERE id IN (SELECT id FROM cleanup_orders);
+        DELETE FROM cart_item WHERE user_id IN (SELECT id FROM cleanup_users)
+          OR product_id IN (SELECT id FROM product WHERE shop_id IN (SELECT id FROM cleanup_shops));
+        DELETE FROM delivery_address WHERE user_id IN (SELECT id FROM cleanup_users);
+        DELETE FROM user_coupon WHERE user_id IN (SELECT id FROM cleanup_users)
+          OR coupon_id IN (SELECT id FROM cleanup_coupons);
+        DELETE FROM coupon WHERE id IN (SELECT id FROM cleanup_coupons);
+        DELETE FROM product WHERE shop_id IN (SELECT id FROM cleanup_shops);
+        DELETE FROM product_category WHERE shop_id IN (SELECT id FROM cleanup_shops);
+        DELETE FROM shop WHERE id IN (SELECT id FROM cleanup_shops);
+        DELETE FROM merchant WHERE id IN (SELECT id FROM cleanup_merchants);
+        DELETE FROM users WHERE id IN (SELECT id FROM cleanup_users);
+        DELETE FROM rider WHERE id IN (SELECT id FROM cleanup_riders);
+        COMMIT;
+    """)
+
+
+atexit.register(cleanup)
 checks = ['V1—V7 表、外键、引用、金额和分类归属核对']
 for item in call('GET', '/cart/items', token=user):
     call('DELETE', f"/cart/items/{item['id']}", token=user)
@@ -166,12 +206,7 @@ subprocess.run([sys.executable, str(ROOT / 'scripts/seed-demo.py')], check=True)
 assert len(call('GET', f'/merchant/shops/{sid}/products', token=merchant)) == 1
 assert call('GET', f'/products/{pid}')['stock'] == 8
 checks.append('重复补演示数据不污染手工店铺、不重置库存')
-# 留下一单制作中的虚构任务，供人工从骑手页面继续验收。
-item = call('POST', '/cart/items', {'productId': pid, 'quantity': 1}, user, 201)
-pending = call('POST', '/orders', {'addressId': address['id'], 'cartItemIds': [item['id']],
-               'remark': '虚构配送验收，请在手机端确认地址、电话与备注'}, user, 201)
-call('POST', f"/merchant/orders/{pending['id']}/confirm", token=merchant)
-call('POST', f"/merchant/orders/{pending['id']}/prepare", token=merchant)
-assert call('GET', f'/products/{pid}')['stock'] == 7
-print(json.dumps({'checks': checks, 'shopId': sid, 'productId': pid, 'orderId': oid,
-                  'pendingRiderOrderId': pending['id']}, ensure_ascii=False, indent=2))
+cleanup()
+atexit.unregister(cleanup)
+assert sql(f"SELECT COUNT(*) FROM merchant WHERE account='merchant_{suffix}'") == '0'
+print(json.dumps({'checks': checks, 'cleanup': '本次虚构账号、店铺和订单已清理'}, ensure_ascii=False, indent=2))
