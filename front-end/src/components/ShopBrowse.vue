@@ -98,58 +98,58 @@ onMounted(load)
 </script>
 
 <style scoped>
-.shop-browse { color: #222; }
-.search-area { padding: 24px 30px; background: #fff; border-radius: 6px; }
+.shop-browse { color: var(--ink); }
+.search-area { padding: 24px 30px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-card); }
 .search-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
 .search-heading h1 { font-size: 26px; line-height: 1.4; }
-.search-heading p { color: #888; font-size: 13px; margin-top: 5px; }
-.address-link { font-size: 14px; color: #0089ed; white-space: nowrap; text-decoration: none; }
+.search-heading p { color: var(--muted); font-size: 14px; margin-top: 5px; }
+.address-link { font-size: 14px; color: var(--brand); white-space: nowrap; text-decoration: none; }
 .address-link span { margin-left: 8px; font-size: 22px; }
-.search-box { display: flex; align-items: center; border: 2px solid #0097ff; border-radius: 5px; overflow: hidden; background: #fff; }
+.search-box { display: flex; align-items: center; border: 2px solid var(--brand); border-radius: var(--radius-control); overflow: hidden; background: #fff; }
 .search-box svg { width: 20px; height: 20px; margin: 0 13px 0 18px; fill: none; stroke: #999; stroke-width: 1.8; flex-shrink: 0; }
 .search-box input { border: 0; outline: none; flex: 1; min-width: 0; height: 46px; font: inherit; font-size: 15px; background: transparent; }
 .search-box:focus-within { outline: 3px solid #c9e8ff; outline-offset: 2px; }
-.search-box button { align-self: stretch; min-width: 104px; background: #0097ff; border: 0; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
+.search-box button { align-self: stretch; min-width: 104px; background: var(--brand); border: 0; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; }
 .food-categories { display: grid; grid-template-columns: repeat(6, 1fr); padding: 22px 30px; background: #fff; border-top: 1px solid #f5f5f5; }
 .food-categories button { display: grid; justify-items: center; gap: 10px; background: none; border: 0; padding: 8px; font: inherit; font-size: 14px; cursor: pointer; }
 .food-categories img { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; transition: transform .15s; }
 .food-categories button:hover img { transform: translateY(-3px); }
-.food-categories button[aria-pressed="true"] { color: #0089ed; font-weight: bold; }
-.food-categories button[aria-pressed="true"] img { outline: 3px solid #0097ff; outline-offset: 3px; }
+.food-categories button[aria-pressed="true"] { color: var(--brand); font-weight: bold; }
+.food-categories button[aria-pressed="true"] img { outline: 3px solid var(--brand); outline-offset: 3px; }
 .restaurant-section { margin-top: 28px; }
 .restaurant-heading, .restaurant-heading > div { display: flex; align-items: baseline; gap: 12px; }
 .restaurant-heading { justify-content: space-between; padding-bottom: 17px; }
 .restaurant-heading h2 { font-size: 21px; overflow-wrap: anywhere; }
 .restaurant-heading span { color: #999; font-size: 13px; white-space: nowrap; }
-.refresh-button, .reset-button { background: none; border: 0; color: #0089ed; font: inherit; font-size: 13px; cursor: pointer; padding: 8px; white-space: nowrap; }
+.refresh-button, .reset-button { background: none; border: 0; color: var(--brand); font: inherit; font-size: 14px; cursor: pointer; padding: 8px; white-space: nowrap; }
 .shop-filters { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; padding: 15px 20px; margin-bottom: 12px; background: #fff; font-size: 13px; }
 .sort-control { color: #888; display: flex; align-items: center; gap: 10px; }
 .sort-control select { color: #333; font: inherit; background: #fff; border: 0; padding: 5px; cursor: pointer; }
 .filter-check { display: flex; align-items: center; gap: 7px; cursor: pointer; }
-.filter-check input { width: 15px; height: 15px; accent-color: #0097ff; }
+.filter-check input { width: 18px; height: 18px; accent-color: var(--brand); }
 .restaurant-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; list-style: none; padding: 0; }
-.restaurant-card { display: flex; gap: 15px; height: 100%; min-height: 164px; padding: 20px 16px; background: #fff; color: inherit; text-decoration: none; border: 1px solid transparent; border-radius: 4px; transition: border-color .15s, box-shadow .15s; }
-.restaurant-card:hover { border-color: #b4dfff; box-shadow: 0 3px 14px #0089ed0d; }
+.restaurant-card { display: flex; gap: 15px; height: 100%; min-height: 164px; padding: 20px 16px; background: #fff; color: inherit; text-decoration: none; border: 1px solid var(--line); border-radius: var(--radius-card); transition: border-color .15s, box-shadow .15s; }
+.restaurant-card:hover { border-color: #9bc8f2; box-shadow: var(--shadow-hover); }
 .restaurant-photo { flex: 0 0 94px; position: relative; height: 94px; border-radius: 4px; overflow: hidden; }
 .restaurant-photo img { width: 100%; height: 100%; object-fit: cover; }
-.photo-placeholder { display: grid; place-items: center; height: 100%; background: #e8f5ff; color: #168be0; font-size: 25px; font-weight: 700; }
+.photo-placeholder { display: grid; place-items: center; height: 100%; background: var(--brand-soft); color: var(--brand); font-size: 25px; font-weight: 700; }
 .resting .restaurant-photo img { filter: grayscale(.8); }
 .resting-label { position: absolute; bottom: 0; left: 0; right: 0; background: #333a; text-align: center; color: white; padding: 3px; font-size: 12px; }
 .restaurant-info { min-width: 0; flex: 1; }
 .restaurant-info h3 { font-size: 16px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.business-status { display: flex; align-items: center; gap: 5px; color: #168b51; font-size: 12px; margin-top: 7px; }
+.business-status { display: flex; align-items: center; gap: 5px; color: var(--success); font-size: 13px; margin-top: 7px; }
 .business-status i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .business-status.closed { color: #888; }
 .delivery-fees { display: flex; flex-wrap: wrap; gap: 0; color: #555; font-size: 12px; margin-top: 9px; }
 .delivery-fees span + span { border-left: 1px solid #ddd; margin-left: 8px; padding-left: 8px; }
-.restaurant-description { font-size: 12px; line-height: 1.6; color: #999; border-top: 1px dashed #eee; padding-top: 8px; margin-top: 10px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.restaurant-description { font-size: 13px; line-height: 1.6; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 10px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .browse-state { text-align: center; background: #fff; padding: 65px 20px; color: #888; font-size: 14px; }
 .browse-state h3 { color: #555; font-size: 17px; margin-bottom: 10px; }
-.browse-state button { margin-top: 20px; padding: 10px 20px; background: #0097ff; border: 0; color: #fff; border-radius: 4px; cursor: pointer; }
+.browse-state button { margin-top: 20px; padding: 10px 20px; background: var(--brand); border: 0; color: #fff; border-radius: var(--radius-control); cursor: pointer; }
 .list-end { text-align: center; color: #aaa; font-size: 12px; padding: 30px 0; }
 @media (max-width: 1080px) { .restaurant-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 600px) {
-  .search-area { margin: -16px -16px 0; border-radius: 0; padding: 18px 16px 22px; background: #0097ff; color: #fff; }
+  .search-area { margin: -16px -16px 0; border: 0; border-radius: 0; padding: 18px 16px 22px; background: var(--brand); color: #fff; }
   .search-heading { margin-bottom: 16px; }
   .search-heading h1 { font-size: 23px; }
   .search-heading p { display: none; }
@@ -168,7 +168,7 @@ onMounted(load)
   .sort-control { gap: 3px; }
   .sort-control > select { max-width: 112px; }
   .restaurant-grid { grid-template-columns: 1fr; gap: 0; margin: 0 -16px; }
-  .restaurant-card { border-bottom: 1px solid #f2f2f2; padding: 18px 16px; min-height: 145px; gap: 13px; }
+  .restaurant-card { border-width: 0 0 1px; border-radius: 0; padding: 18px 16px; min-height: 145px; gap: 13px; }
   .restaurant-photo { flex-basis: 86px; height: 86px; }
   .restaurant-info h3 { font-size: 17px; }
 }

@@ -216,8 +216,9 @@ onMounted(load)
 .coupon-section {
   margin-top: 20px;
   padding: 18px;
-  border: 1px solid #ebeef5;
-  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: #fffaf7;
 }
 
 .coupon-heading {
@@ -234,7 +235,7 @@ onMounted(load)
 
 .muted {
   margin: 0;
-  color: #909399;
+  color: var(--muted);
 }
 
 .coupon-alert {
@@ -252,8 +253,9 @@ onMounted(load)
   justify-content: space-between;
   gap: 16px;
   padding: 14px;
-  border: 1px solid #ebeef5;
-  border-radius: 8px;
+  border: 1px solid #fed7aa;
+  border-radius: var(--radius-control);
+  background: white;
 }
 
 .coupon-info {
@@ -268,7 +270,10 @@ onMounted(load)
 .coupon-value {
   margin: 0 0 4px;
   font-weight: 600;
+  color: var(--promo);
 }
+
+.coupon-section :deep(.el-empty) { padding: 20px 0 8px; }
 
 @media (max-width: 640px) {
   .coupon-card {

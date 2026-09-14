@@ -78,11 +78,14 @@ async function act(order, action) {
 onMounted(load)
 </script>
 <style scoped>
-.rider-page { max-width: 560px; margin: auto; padding: 20px 14px; }
+.rider-page { max-width: 620px; min-height: 100dvh; margin: auto; padding: 24px 16px 48px; }
+header h1 { font-size: 30px; }
 header, nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 nav { margin: 16px 0; }
-nav button { flex: 1; min-height: 44px; border: 1px solid #cadad5; border-radius: 8px; }
-.task { margin: 12px 0; padding: 16px; overflow-wrap: anywhere; }
+nav button { flex: 1; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius-control); background: white; color: var(--ink); font: inherit; cursor: pointer; }
+nav button.primary { border-color: var(--brand); background: var(--brand); color: white; }
+.task { margin: 12px 0; padding: 18px; overflow-wrap: anywhere; box-shadow: 0 1px 2px rgba(15, 23, 42, .04); }
+.task b { display: block; font-size: 18px; }
 .task p, .delivery-detail p { margin: 12px 0; line-height: 1.6; overflow-wrap: anywhere; }
 .task button, .delivery-detail button { width: 100%; min-height: 44px; margin-top: 10px; }
 </style>
