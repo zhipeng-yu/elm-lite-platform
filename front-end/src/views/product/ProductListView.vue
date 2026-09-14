@@ -16,17 +16,21 @@
       />
     </el-tabs>
     <div v-loading="loading" class="content">
-      <el-alert
-        v-if="errorMsg"
-        type="error"
-        :closable="false"
-        show-icon
-        :title="errorMsg"
-        class="error"
-      />
+      <div v-if="errorMsg" class="error-state">
+        <el-alert type="error" :closable="false" show-icon :title="errorMsg" />
+        <el-button :disabled="loading" @click="loadProducts">重新加载</el-button>
+      </div>
       <el-empty v-else-if="products.length === 0" description="暂无商品" />
       <ul v-else class="product-list">
-        <li v-for="item in products" :key="item.id" @click="goDetail(item.id)">
+        <li
+          v-for="item in products"
+          :key="item.id"
+          role="link"
+          tabindex="0"
+          @keydown.enter.self="goDetail(item.id)"
+          @keydown.space.self.prevent="goDetail(item.id)"
+          @click="goDetail(item.id)"
+        >
           <div class="product-name">
             {{ item.productName }}
             <el-tag v-if="item.stock === 0" type="info" size="small">售罄</el-tag>
@@ -123,8 +127,15 @@ onMounted(async () => {
   min-height: 160px;
 }
 
-.error {
+.error-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
+}
+
+.error-state .el-alert {
+  flex: 1;
 }
 
 .product-list {
@@ -140,7 +151,8 @@ onMounted(async () => {
   transition: box-shadow 0.2s;
 }
 
-.product-list li:hover {
+.product-list li:hover,
+.product-list li:focus-visible {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 

@@ -2,19 +2,23 @@
   <div class="orders">
     <h2>我的订单</h2>
     <div v-loading="loading" class="content">
-      <el-alert
-        v-if="errorMsg"
-        type="error"
-        :closable="false"
-        show-icon
-        :title="errorMsg"
-        class="error"
-      />
+      <div v-if="errorMsg" class="error-state">
+        <el-alert type="error" :closable="false" show-icon :title="errorMsg" />
+        <el-button :disabled="loading" @click="load">重新加载</el-button>
+      </div>
       <el-empty v-else-if="orders.length === 0" description="还没有订单">
         <el-button type="primary" @click="router.push('/shops')">去点餐</el-button>
       </el-empty>
       <ul v-else class="order-list">
-        <li v-for="order in orders" :key="order.id" @click="goDetail(order.id)">
+        <li
+          v-for="order in orders"
+          :key="order.id"
+          role="link"
+          tabindex="0"
+          @keydown.enter.self="goDetail(order.id)"
+          @keydown.space.self.prevent="goDetail(order.id)"
+          @click="goDetail(order.id)"
+        >
           <div class="order-head">
             <span class="order-no">{{ order.orderNo }}</span>
             <el-tag :type="statusTag(order.orderStatus)" size="small">
@@ -102,8 +106,15 @@ onMounted(load)
   margin-top: 8px;
 }
 
-.error {
+.error-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
+}
+
+.error-state .el-alert {
+  flex: 1;
 }
 
 .order-list {
@@ -119,7 +130,8 @@ onMounted(load)
   transition: box-shadow 0.2s;
 }
 
-.order-list li:hover {
+.order-list li:hover,
+.order-list li:focus-visible {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
