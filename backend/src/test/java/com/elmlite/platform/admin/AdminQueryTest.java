@@ -272,6 +272,25 @@ class AdminQueryTest {
     }
 
     @Test
+    void includesDiscountSnapshotInAdminOrderAmounts() throws Exception {
+        Order update = new Order();
+        update.setId(orderAId);
+        update.setDiscountAmount(new BigDecimal("5.00"));
+        update.setTotalAmount(new BigDecimal("34.00"));
+        orderMapper.updateById(update);
+        String token = adminToken();
+        mockMvc.perform(get("/api/v1/admin/orders/" + orderAId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.discountAmountCent").value(500))
+                .andExpect(jsonPath("$.data.totalAmountCent").value(3400));
+        mockMvc.perform(get("/api/v1/admin/orders").param("orderStatus", "0")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].discountAmountCent").value(500));
+    }
+
+    @Test
     void returnsOrderSnapshotAnd404ForUnknownOrder() throws Exception {
         String token = adminToken();
 
@@ -282,6 +301,7 @@ class AdminQueryTest {
                 .andExpect(jsonPath("$.data.receiverName").value("用户甲"))
                 .andExpect(jsonPath("$.data.deliveryAddress").value("测试校区1号宿舍楼"))
                 .andExpect(jsonPath("$.data.productAmountCent").value(3600))
+                .andExpect(jsonPath("$.data.discountAmountCent").value(0))
                 .andExpect(jsonPath("$.data.deliveryFeeCent").value(300))
                 .andExpect(jsonPath("$.data.totalAmountCent").value(3900))
                 .andExpect(jsonPath("$.data.remark").value("少辣"))
