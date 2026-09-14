@@ -1,6 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { productPayload } from '../src/utils/merchant-form.js'
+
+test('本站封面路径不会被浏览器绝对网址校验挡住保存', async () => {
+  const source = await readFile(new URL('../src/views/shop/MerchantDashboardView.vue', import.meta.url), 'utf8')
+  const input = source.match(/<input[^>]*v-model\.trim="form\.imageUrl"[^>]*>/)?.[0]
+  assert.ok(input)
+  assert.doesNotMatch(input, /type="url"/)
+  assert.equal(productPayload({ imageUrl: '/images/food/rice.jpg' }).imageUrl, '/images/food/rice.jpg')
+})
 
 test('编辑名称不发送旧库存、未更改分类或未更改详情图', () => {
   const old = {
