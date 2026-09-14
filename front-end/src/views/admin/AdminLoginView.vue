@@ -89,16 +89,17 @@ async function handleSubmit() {
 
 <style scoped>
 .admin-login-page {
-  min-height: 100%;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: #f5f5f5;
+  background: linear-gradient(145deg, #eef6ff, var(--page));
 }
 
 .admin-login-card {
-  width: 400px;
+  width: min(420px, 100%);
+  border-radius: var(--radius-card);
 }
 
 .error {
@@ -106,7 +107,7 @@ async function handleSubmit() {
 }
 
 .tip {
-  color: #909399;
-  font-size: 12px;
+  color: var(--muted);
+  font-size: 13px;
 }
 </style>

@@ -14,7 +14,7 @@
     <section v-else-if="!orders.length" class="surface-card empty-state"><h2>暂无订单</h2><p class="muted">新订单会在刷新后显示。</p></section>
     <section v-else class="surface-card table-scroll">
       <table><thead><tr><th>订单号</th><th>收货人</th><th>商品</th><th>数量</th><th>金额</th><th>状态</th><th>下单时间</th><th>操作</th></tr></thead>
-        <tbody><tr v-for="order in orders" :key="order.id"><td><router-link :to="`/merchant/orders/${order.id}`">{{ order.orderNo }}</router-link></td><td>{{ order.receiverName }}</td><td>{{ order.items.map(item => item.productName).join('、') }}</td><td>{{ order.items.reduce((sum, item) => sum + item.quantity, 0) }}</td><td>¥{{ formatPriceCent(order.totalAmountCent) }}</td><td><el-tag :type="ORDER_STATUS_TAG[order.orderStatus]">{{ ORDER_STATUS_TEXT[order.orderStatus] }}</el-tag></td><td>{{ order.createdAt }}</td><td><button v-if="order.orderStatus === 0" class="text-button" :disabled="acting === order.id" @click="act(order, 'confirm')">确认</button><button v-if="order.orderStatus === 1" class="text-button" :disabled="acting === order.id" @click="act(order, 'prepare')">开始制作</button></td></tr></tbody>
+        <tbody><tr v-for="order in orders" :key="order.id"><td data-label="订单号"><router-link :to="`/merchant/orders/${order.id}`">{{ order.orderNo }}</router-link></td><td data-label="收货人">{{ order.receiverName }}</td><td data-label="商品">{{ order.items.map(item => item.productName).join('、') }}</td><td data-label="数量">{{ order.items.reduce((sum, item) => sum + item.quantity, 0) }}</td><td data-label="金额">¥{{ formatPriceCent(order.totalAmountCent) }}</td><td data-label="状态"><el-tag :type="ORDER_STATUS_TAG[order.orderStatus]">{{ ORDER_STATUS_TEXT[order.orderStatus] }}</el-tag></td><td data-label="下单时间">{{ order.createdAt }}</td><td data-label="操作"><button v-if="order.orderStatus === 0" class="text-button" :disabled="acting === order.id" @click="act(order, 'confirm')">确认</button><button v-if="order.orderStatus === 1" class="text-button" :disabled="acting === order.id" @click="act(order, 'prepare')">开始制作</button></td></tr></tbody>
       </table>
     </section>
   </div>
@@ -53,3 +53,16 @@ async function act(order, action) {
 }
 onMounted(load)
 </script>
+
+<style scoped>
+@media (max-width: 600px) {
+  .table-scroll { overflow: visible; padding: 0; border: 0; background: transparent; }
+  table, tbody, tr, td { display: block; width: 100%; white-space: normal; }
+  thead { display: none; }
+  tr { margin-bottom: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: white; }
+  .table-scroll td { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; padding: 8px 0; border: 0; overflow-wrap: anywhere; }
+  td::before { content: attr(data-label); color: var(--muted); font-size: 14px; font-weight: 600; }
+  td:first-child { font-weight: 700; }
+  td[data-label="操作"] .text-button { min-height: 44px; justify-self: start; }
+}
+</style>
