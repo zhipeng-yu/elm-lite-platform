@@ -142,7 +142,8 @@
           </el-table-column>
         </el-table>
         <p class="amount">
-          商品 ¥{{ formatPriceCent(orderDetail.productAmountCent) }} +
+          商品 ¥{{ formatPriceCent(orderDetail.productAmountCent) }} −
+          优惠 ¥{{ formatPriceCent(orderDetail.discountAmountCent ?? 0) }} +
           配送 ¥{{ formatPriceCent(orderDetail.deliveryFeeCent) }} =
           <b>¥{{ formatPriceCent(orderDetail.totalAmountCent) }}</b>
         </p>
