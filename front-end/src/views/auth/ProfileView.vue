@@ -1,6 +1,7 @@
 <template>
   <section class="surface-card narrow-panel">
     <p class="eyebrow">我的账户</p><h1>个人信息</h1>
+    <nav class="actions" aria-label="我的服务"><router-link class="secondary" to="/addresses">收货地址</router-link><router-link class="secondary" to="/coupons/mine">优惠券</router-link><router-link class="secondary" to="/cart">购物车</router-link></nav>
     <p v-if="loading" role="status">正在加载个人信息…</p>
     <p v-if="error" role="alert" class="error-text">{{ error }} <button class="secondary" @click="load">重试</button></p>
     <form v-if="profile" class="form-grid" @submit.prevent="save">

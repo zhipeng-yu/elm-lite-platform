@@ -4,7 +4,7 @@
       <h2>购物车</h2>
       <el-button
         type="primary"
-        :disabled="loading || cartItems.length === 0"
+        :disabled="loading || busy || cartItems.length === 0 || Boolean(errorMsg)"
         @click="router.push('/checkout')"
       >
         去结算
@@ -19,6 +19,7 @@
         :title="errorMsg"
         class="error"
       />
+      <el-button v-if="errorMsg" :disabled="loading" @click="load">重新加载</el-button>
       <el-empty v-else-if="cartItems.length === 0" description="购物车是空的，去店铺点餐吧">
         <el-button type="primary" @click="router.push('/shops')">去点餐</el-button>
       </el-empty>
@@ -28,6 +29,7 @@
             <div class="item-main">
               <div class="name">
                 {{ item.productName }}
+                <el-tag v-if="item.status !== 1" type="warning" size="small">已下架</el-tag>
                 <el-tag v-if="item.stock === 0" type="info" size="small">售罄</el-tag>
               </div>
               <p class="meta">单价 ¥{{ formatPriceCent(item.priceCent) }}</p>
@@ -36,18 +38,20 @@
               <el-input-number
                 :model-value="item.quantity"
                 :min="1"
-                :max="item.stock"
-                size="small"
+                :max="Math.max(item.stock, 1)"
+                :disabled="busy || item.status !== 1 || item.stock === 0"
+                :aria-label="`${item.productName} 的数量`"
                 @change="(value) => handleQuantity(item, value)"
               />
               <span class="subtotal">¥{{ formatPriceCent(item.subtotalCent) }}</span>
-              <el-button link type="danger" @click="handleRemove(item)">删除</el-button>
+              <el-button link type="danger" :disabled="busy" @click="handleRemove(item)">删除</el-button>
             </div>
           </li>
         </ul>
         <div class="summary">
-          合计：<span class="total">¥{{ formatPriceCent(totalCent) }}</span>
+          商品合计：<span class="total">¥{{ formatPriceCent(totalCent) }}</span>（配送费在结算时显示）
         </div>
+        <el-button @click="router.push(`/shops/${cartItems[0].shopId}/products`)">继续加购</el-button>
       </template>
     </div>
   </div>
@@ -65,6 +69,7 @@ const router = useRouter()
 const loading = ref(false)
 const errorMsg = ref('')
 const cartItems = ref([])
+const busy = ref(false)
 
 const totalCent = computed(() =>
   cartItems.value.reduce((sum, item) => sum + item.subtotalCent, 0)
@@ -84,26 +89,29 @@ async function load() {
 }
 
 async function handleQuantity(item, value) {
-  if (value == null) {
+  if (busy.value || value == null || value === item.quantity) {
     return
   }
+  busy.value = true
   try {
     await updateCartItem(item.id, value)
     await load()
   } catch (error) {
     ElMessage.error(error.response?.data?.msg || '修改数量失败，请稍后重试')
     await load()
-  }
+  } finally { busy.value = false }
 }
 
 async function handleRemove(item) {
+  if (busy.value) return
+  busy.value = true
   try {
     await removeCartItem(item.id)
     ElMessage.success('已从购物车移除')
     await load()
   } catch (error) {
     ElMessage.error(error.response?.data?.msg || '删除失败，请稍后重试')
-  }
+  } finally { busy.value = false }
 }
 
 onMounted(load)
@@ -176,5 +184,13 @@ onMounted(load)
   color: #f56c6c;
   font-size: 18px;
   font-weight: 700;
+}
+@media (max-width: 600px) {
+  .cart-list li { align-items: stretch; flex-direction: column; gap: 14px; }
+  .name { flex-wrap: wrap; overflow-wrap: anywhere; }
+  .item-actions { flex-wrap: wrap; gap: 8px; }
+  .item-actions .el-input-number { width: 140px; }
+  .subtotal { min-width: 0; margin-left: auto; }
+  .summary { font-size: 13px; line-height: 1.8; margin-bottom: 12px; }
 }
 </style>

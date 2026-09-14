@@ -13,6 +13,7 @@
         :title="errorMsg"
         class="error"
       />
+      <el-button v-if="errorMsg" :disabled="loading" @click="load">重新加载</el-button>
 
       <el-empty v-else-if="notFound" description="商品不存在" class="empty">
         <el-button type="primary" @click="router.push('/shops')">
@@ -93,14 +94,15 @@
             <strong>¥{{ formatPriceCent(product.priceCent) }}</strong>
           </div>
 
-          <div class="cart-actions">
             <el-input-number
               v-model="quantity"
               :min="1"
               :max="Math.max(product.stock, 1)"
               :disabled="product.stock === 0"
+              aria-label="购买数量"
             />
-
+          <div class="cart-actions">
+            <el-button @click="router.push('/cart')">购物车</el-button>
             <el-button
               type="primary"
               :disabled="product.stock === 0"
@@ -418,17 +420,23 @@ onMounted(load)
   }
 
   .purchase-bar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(66px + env(safe-area-inset-bottom));
+    flex-wrap: wrap;
     gap: 10px;
     padding: 10px 12px;
   }
 
   .cart-actions {
-    flex: 1;
+    width: 100%;
+    flex-wrap: wrap;
     justify-content: flex-end;
   }
 
-  .cart-actions :deep(.el-input-number) {
-    width: 112px;
-  }
+  .purchase-bar > .el-input-number { width: 140px; }
+  .cart-actions .el-button { flex: 1; margin-left: 0; }
+  .product-detail { padding-bottom: 160px; }
 }
 </style>

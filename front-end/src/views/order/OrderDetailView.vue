@@ -2,6 +2,7 @@
   <div class="order-detail">
     <div class="header">
       <el-button link @click="router.push('/orders')">← 返回订单列表</el-button>
+      <el-button :disabled="loading || cancelling" @click="load">刷新进度</el-button>
     </div>
     <div v-loading="loading" class="content">
       <el-alert
@@ -15,7 +16,7 @@
       <el-empty v-else-if="notFound" description="订单不存在" class="empty">
         <el-button type="primary" @click="router.push('/orders')">返回订单列表</el-button>
       </el-empty>
-      <template v-else-if="order">
+      <template v-if="order">
         <div class="order-head">
           <h2>{{ order.orderNo }}</h2>
           <el-tag :type="statusTag(order.orderStatus)">
@@ -23,6 +24,7 @@
           </el-tag>
         </div>
         <p class="time">下单时间：{{ order.createdAt }}</p>
+        <p class="progress-hint" role="status">{{ ['等待商家接单，接单前可取消', '商家已接单，正在准备餐品', '餐品制作中，等待骑手取餐', '骑手正在配送，请留意来电', '订单已送达', '订单已取消，所用优惠券按原有效期返还'][order.orderStatus] }}</p>
         <el-descriptions :column="1" border>
           <el-descriptions-item label="收货人">
             {{ order.receiverName }} {{ order.receiverPhone }}
@@ -44,6 +46,7 @@
         <div class="summary">
           <p>商品小计：¥{{ formatPriceCent(order.productAmountCent) }}</p>
           <p>配送费：¥{{ formatPriceCent(order.deliveryFeeCent) }}</p>
+          <p v-if="order.discountAmountCent > 0">优惠：−¥{{ formatPriceCent(order.discountAmountCent) }}</p>
           <p class="total">合计：¥{{ formatPriceCent(order.totalAmountCent) }}</p>
         </div>
         <el-button v-if="order.orderStatus === 0" type="danger" plain :loading="cancelling" @click="cancel">取消订单</el-button>
@@ -88,8 +91,8 @@ async function load() {
   try {
     order.value = await fetchOrder(route.params.id)
   } catch (error) {
-    order.value = null
     if (error.response?.status === 404) {
+      order.value = null
       notFound.value = true
     } else {
       errorMsg.value = error.response?.data?.msg || '加载失败，请稍后重试'
@@ -102,13 +105,17 @@ async function load() {
 onMounted(load)
 
 async function cancel() {
+  if (cancelling.value || loading.value || order.value?.orderStatus !== 0) return
+  cancelling.value = true
   try {
-    await ElMessageBox.confirm('取消后将恢复商品库存，确定继续吗？', '取消订单', { type: 'warning' })
-    cancelling.value = true
+    await ElMessageBox.confirm('确定取消这份订单吗？所用优惠券会返还，有效期不变。', '取消订单', { type: 'warning', confirmButtonText: '取消订单', cancelButtonText: '继续等待' })
     order.value = await cancelOrder(order.value.id)
     ElMessage.success('订单已取消')
   } catch (error) {
-    if (error !== 'cancel' && error !== 'close') errorMsg.value = error.response?.data?.msg || '取消失败，请刷新后重试'
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error(error.response?.data?.msg || '尚未确认取消结果，请刷新进度后查看')
+      await load()
+    }
   } finally { cancelling.value = false }
 }
 </script>
@@ -119,6 +126,8 @@ async function cancel() {
 }
 
 .header {
+  display: flex;
+  justify-content: space-between;
   margin-bottom: 8px;
 }
 
@@ -148,6 +157,8 @@ async function cancel() {
   color: #909399;
   margin-bottom: 12px;
 }
+.progress-hint { margin: 12px 0; padding: 12px; background: #eaf6ff; border-radius: 8px; line-height: 1.6; }
+.content :deep(.el-descriptions__content) { overflow-wrap: anywhere; }
 
 .items-title {
   margin: 16px 0 8px;

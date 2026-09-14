@@ -15,3 +15,14 @@ body {
   color: #333;
   background-color: #f5f5f5;
 }
+
+@media (max-width: 600px) {
+  input, textarea, select { font-size: 16px !important; }
+  .el-button { min-height: 44px; }
+  .el-input-number { height: 44px; line-height: 42px; }
+  .el-input-number__decrease, .el-input-number__increase { width: 44px; }
+  .el-input-number .el-input__wrapper { padding-left: 44px; padding-right: 44px; }
+  .el-message-box { max-width: calc(100vw - 24px); }
+  .el-message { max-width: calc(100vw - 24px); overflow-wrap: anywhere; }
+  .el-dialog { max-width: calc(100vw - 24px); }
+}
