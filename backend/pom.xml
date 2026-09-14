@@ -81,6 +81,23 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>service-coverage-check</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>CLASS</element>
+                                    <includes><include>com.elmlite.platform.service.*Service</include></includes>
+                                    <limits>
+                                        <limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>0.90</minimum></limit>
+                                        <limit><counter>METHOD</counter><value>COVEREDRATIO</value><minimum>0.90</minimum></limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
