@@ -4,6 +4,7 @@
 
 ## 文档入口
 
+- [需求文档](docs/requirements.md)：角色、功能范围、业务规则与验收标准
 - [成员协作指南](CONTRIBUTING.md)：分工、PowerShell Git 步骤、PR、审核和冲突处理
 - [AI 协作规则](AGENTS.md)：AI 必须遵守的 TDD、架构和修改边界
 - [接口契约与登录鉴权方案](api-contract.md)：统一响应、用户/商家、商品、地址、购物车、订单接口和 JWT 约定
