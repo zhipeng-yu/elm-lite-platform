@@ -24,8 +24,12 @@
       </div>
     </header>
     <main class="food-main">
-      <router-view v-slot="{ Component }">
-        <KeepAlive :key="sessionKey" include="CheckoutView"><component :is="Component" /></KeepAlive>
+      <router-view v-slot="{ Component, route }">
+        <Transition name="route" mode="out-in">
+          <KeepAlive :key="sessionKey" include="CheckoutView">
+            <component :is="Component" :key="route.path" />
+          </KeepAlive>
+        </Transition>
       </router-view>
     </main>
     <footer class="food-footer"><span>校园外卖课程演示</span><router-link v-if="!hasToken" to="/merchant/login">商家入驻</router-link></footer>
@@ -74,7 +78,8 @@ function handleLogout() {
 .account-menu { position: relative; }
 .account-menu summary { cursor: pointer; list-style: none; padding: 15px 0; }
 .account-menu summary::-webkit-details-marker { display: none; }
-.account-dropdown { position: absolute; top: 100%; right: 0; z-index: 20; min-width: 150px; border: 1px solid var(--line); border-radius: var(--radius-control); box-shadow: var(--shadow-hover); background: white; color: var(--ink); padding: 6px; }
+.account-dropdown { position: absolute; top: 100%; right: 0; z-index: 20; min-width: 150px; border: 1px solid var(--line); border-radius: var(--radius-control); box-shadow: var(--shadow-hover); background: white; color: var(--ink); padding: 6px; transform-origin: top right; }
+details[open] .account-dropdown { animation: menu-in var(--motion-page) var(--ease-out); }
 .account-dropdown a, .account-dropdown button { display: block; padding: 12px 14px; text-align: left; width: 100%; font: inherit; border: 0; border-radius: 6px; background: white; color: var(--ink); cursor: pointer; }
 .account-dropdown a:hover, .account-dropdown button:hover { background: var(--brand-soft); color: var(--brand); }
 .food-main { max-width: 1200px; margin: auto; padding: 28px 0 0; min-height: calc(100vh - 150px); }
@@ -92,8 +97,16 @@ function handleLogout() {
   .food-main { padding: 16px 16px 0; min-height: calc(100vh - 170px); }
   .food-footer { padding: 25px 16px calc(90px + env(safe-area-inset-bottom)); }
   .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: #fff; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
-  .mobile-nav a { flex: 1; min-height: 58px; display: grid; justify-items: center; align-content: center; gap: 3px; padding: 6px 0; color: var(--muted); text-decoration: none; font-size: 12px; }
-  .mobile-nav svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.7; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .mobile-nav a { position: relative; flex: 1; min-height: 58px; display: grid; justify-items: center; align-content: center; gap: 3px; padding: 6px 0; color: var(--muted); text-decoration: none; font-size: 12px; }
+  .mobile-nav a::after { content: ''; position: absolute; top: 0; width: 24px; height: 3px; border-radius: 0 0 3px 3px; background: var(--brand); transform: scaleX(0); transition: transform var(--motion-control) var(--ease-out); }
+  .mobile-nav svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.7; fill: none; stroke-linejoin: round; stroke-linecap: round; transition: transform var(--motion-control) var(--ease-out); }
   .mobile-nav a.router-link-active { color: var(--brand); font-weight: 700; }
+  .mobile-nav a.router-link-active::after { transform: scaleX(1); }
+  .mobile-nav a.router-link-active svg { transform: translateY(-1px); }
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to { opacity: 1; transform: none; }
 }
 </style>

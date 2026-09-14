@@ -1,7 +1,14 @@
 <template>
-  <router-view />
+  <router-view v-slot="{ Component, route }">
+    <Transition name="route" mode="out-in">
+      <component
+        :is="Component"
+        :key="route.matched[0]?.path || route.path"
+      />
+    </Transition>
+  </router-view>
 </template>
 
 <script setup>
-// 根组件只负责挂载路由出口，页面布局在后续任务中单独封装。
+// 顶层出口只在四种身份布局之间切换；普通页面由 DefaultLayout 内部过渡。
 </script>

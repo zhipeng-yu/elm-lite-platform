@@ -20,6 +20,10 @@
   --radius-control: 8px;
   --radius-card: 12px;
   --shadow-hover: 0 4px 16px rgba(15, 23, 42, .08);
+  --motion-press: 90ms;
+  --motion-control: 160ms;
+  --motion-page: 220ms;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
   --el-color-primary: var(--brand);
   --el-color-success: var(--success);
   --el-color-warning: var(--warning);
@@ -43,8 +47,18 @@ body {
   line-height: 1.5;
 }
 
-a, button, input, select, textarea { transition: border-color .16s, background-color .16s, color .16s, box-shadow .16s; }
+a, button, input, select, textarea { transition: border-color var(--motion-control), background-color var(--motion-control), color var(--motion-control), box-shadow var(--motion-control), transform var(--motion-press); }
+button:not(:disabled):active, a:active { transform: translateY(1px) scale(.985); }
 :focus-visible { outline: 3px solid rgba(11, 107, 203, .28); outline-offset: 2px; }
+
+.route-enter-active {
+  transition: opacity var(--motion-page) var(--ease-out), transform var(--motion-page) var(--ease-out);
+}
+.route-leave-active {
+  transition: opacity var(--motion-control) ease-in, transform var(--motion-control) ease-in;
+}
+.route-enter-from { opacity: 0; transform: translateY(8px); }
+.route-leave-to { opacity: 0; transform: translateY(-4px); }
 
 @media (max-width: 600px) {
   body { font-size: 16px; }
@@ -56,4 +70,14 @@ a, button, input, select, textarea { transition: border-color .16s, background-c
   .el-message-box { max-width: calc(100vw - 24px); }
   .el-message { max-width: calc(100vw - 24px); overflow-wrap: anywhere; }
   .el-dialog { max-width: calc(100vw - 24px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .route-enter-from, .route-leave-to { transform: none; }
 }
