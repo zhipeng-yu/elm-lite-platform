@@ -79,7 +79,7 @@ powershell.exe `
 1. 检查三个演示端口。
 2. 通过 `backend/mvnw.cmd verify` 运行后端测试并构建 JAR。
 3. 前端依赖不存在时执行 `npm.cmd ci`。
-4. 在 `backend/target/local-demo/mysql/` 初始化隔离 MySQL。
+4. 在仓库根目录的 `.local-demo/mysql/` 初始化隔离 MySQL；若检测到旧版 `backend/target/local-demo/`，脚本会在安全检查后整体迁移。
 5. 首次运行时执行 V1、V2 和基础种子 SQL，再按版本号补齐 V3 及之后的迁移。
 6. 运行 `scripts/seed-demo.py`，保证至少 30 家店铺且每店至少 6 件商品，不重置已有库存。
 7. 为当前进程随机生成 JWT 密钥，启动后端和关闭 mock 的前端。
@@ -101,7 +101,7 @@ Demo ready: http://127.0.0.1:5180
 | Spring Boot | `127.0.0.1:18081` | 仅供本机前端代理访问 |
 | Vite | `127.0.0.1:5180` | 浏览器统一入口 |
 
-演示数据保存在 Git 忽略的 `backend/target/local-demo/`，再次启动时继续使用。脚本每次启动都会重新生成 JWT 密钥，因此重启后需要重新登录。
+演示数据和日志保存在 Git 忽略的仓库根目录 `.local-demo/`，不会被 Maven `clean` 删除，再次启动时继续使用。脚本每次启动都会重新生成 JWT 密钥，因此重启后需要重新登录。
 
 ### 4.4 日志与停止
 
@@ -113,7 +113,7 @@ Demo ready: http://127.0.0.1:5180
 | `backend.log` / `backend-error.log` | 后端标准输出与错误输出 |
 | `frontend.log` / `frontend-error.log` | 前端标准输出与错误输出 |
 
-演示完成后回到启动终端按 Enter。脚本会停止前端、后端和隔离 MySQL。不要通过删除 `backend/target/local-demo/` 来停止服务。
+演示完成后回到启动终端按 Enter。脚本会停止前端、后端和隔离 MySQL。不要通过删除 `.local-demo/` 来停止服务。
 
 ## 5. 手动初始化数据库
 
@@ -354,8 +354,8 @@ mysql.exe `
 - 一键演示：在启动终端按 Enter，由脚本按顺序停止三个服务。
 - 手动前后端：在各自前台终端按 `Ctrl+C` 正常停止。
 - 外部 MySQL：使用操作系统服务管理工具或数据库运维流程停止，不直接结束未知 `mysqld` 进程。
-- 普通重启不会删除业务数据库；一键演示重启也会保留 `backend/target/local-demo/` 中的数据。
-- 若确需重新验证全新演示库，应先停止脚本，再备份或重命名 `backend/target/local-demo/`，不得在服务运行时删除数据目录。
+- 普通重启不会删除业务数据库；一键演示重启也会保留 `.local-demo/` 中的数据。
+- 若确需重新验证全新演示库，应先停止脚本，再备份或重命名 `.local-demo/`，不得在服务运行时删除数据目录。
 
 完成本地手动部署后，可按需清除当前 PowerShell 会话中的敏感环境变量：
 
@@ -379,7 +379,7 @@ Remove-Item Env:ADMIN_PASSWORD -ErrorAction SilentlyContinue
 | 前端请求 `/api` 失败 | 本地检查 `API_PROXY_TARGET` 和后端端口；生产检查 Web 服务器反向代理 |
 | 直接刷新前端路由返回 404 | 为 history 路由配置回退到 `index.html` |
 | 演示重启后返回 401 | 演示 JWT 密钥已重新生成，退出后重新登录 |
-| 一键演示启动失败 | 查看 `backend/target/local-demo/` 中对应的 `*-error.log` 和 `verify.log` |
+| 一键演示启动失败 | 查看 `.local-demo/` 中对应的 `*-error.log` 和 `verify.log` |
 
 ## 12. 生产安全要求
 
