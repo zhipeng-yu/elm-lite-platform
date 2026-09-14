@@ -59,6 +59,15 @@ Remove-Item Env:ADMIN_PASSWORD, Env:ADMIN_USERNAME
 
 手机验收使用 390×844，并用 360×800 补查窄屏。检查首页、店铺、商品、购物车、结算、订单、地址和骑手详情：长文字换行、弹窗宽度、按钮不被底栏遮挡、加减容易点击、失败后能重试。结算草稿只在当前登录会话的页面内返回时保留，浏览器整页刷新或退出登录后重置。实体手机软键盘、触摸和弱网仍需人工设备验收，浏览器模拟不等价。
 
+## 验收截图参考
+
+队友在 [PR #79](https://github.com/zhipeng-yu/elm-lite-platform/pull/79) 留存的页面参考：
+
+- [手机首页](demo-screenshots/mobile-home.png)、[顾客订单](demo-screenshots/mobile-order-done.png)、[商家订单](demo-screenshots/mobile-merchant-orders.png)、[骑手任务](demo-screenshots/mobile-rider-tasks.png)。
+- [桌面首页](demo-screenshots/desktop-home.png)、[管理员订单](demo-screenshots/desktop-admin-orders.png)。
+
+截图属于该 PR 的验收版本，不代替后续修改的重新验收。商家表格允许容器内横向滚动；判断页面溢出时不要把表格内滚动和整页溢出混为一谈。
+
 ## 可重复的自动检查
 
 需要包含管理员的完整回归时，先按上一节设置管理员环境变量，再启动（也可在 PowerShell 7 直接执行 `& ./scripts/start-demo.ps1 -Verify`）：

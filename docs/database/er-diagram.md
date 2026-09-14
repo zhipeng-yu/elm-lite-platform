@@ -4,19 +4,22 @@
 
 本数据库设计以 2026 年软件工程综合实践任务书为主要依据，旧版饿了么项目任务书仅作为业务流程和表结构参考，不直接照搬。
 
-数据库对应 V1—V7 迁移，共 14 张表：
+V1—V7 迁移包含 14 个实体：
 
 - 用户（USER）
 - 商家（MERCHANT）
 - 店铺（SHOP）
 - 商品分类（PRODUCT_CATEGORY）
 - 商品（PRODUCT）
+- 商品详情图片（PRODUCT_DETAIL_IMAGE）
 - 购物车明细（CART_ITEM）
 - 收货地址（DELIVERY_ADDRESS）
+- 优惠券（COUPON）
+- 用户优惠券（USER_COUPON）
+- 骑手（RIDER）
 - 订单（ORDERS）
 - 订单明细（ORDER_ITEM）
-- 商品详情图（PRODUCT_DETAIL_IMAGE）、店铺券（COUPON）、用户券（USER_COUPON）
-- 骑手（RIDER）、管理员（ADMIN_ACCOUNT，独立账号表）
+- 管理员账号（ADMIN_ACCOUNT，无外键关系）
 
 ## 2. 实体关系图
 
@@ -26,6 +29,7 @@ erDiagram
     SHOP ||--o{ PRODUCT_CATEGORY : has
     SHOP ||--o{ PRODUCT : sells
     PRODUCT_CATEGORY ||--o{ PRODUCT : contains
+    PRODUCT ||--o{ PRODUCT_DETAIL_IMAGE : has
 
     USER ||--o{ CART_ITEM : has
     PRODUCT ||--o{ CART_ITEM : references
@@ -35,14 +39,16 @@ erDiagram
     SHOP ||--o{ ORDERS : receives
     DELIVERY_ADDRESS |o--o{ ORDERS : used_by
 
-    ORDERS ||--|{ ORDER_ITEM : contains
-    PRODUCT ||--o{ ORDER_ITEM : references
-    PRODUCT ||--o{ PRODUCT_DETAIL_IMAGE : displays
     SHOP ||--o{ COUPON : issues
     USER ||--o{ USER_COUPON : claims
-    COUPON ||--o{ USER_COUPON : granted_as
+    COUPON ||--o{ USER_COUPON : claimed_as
     USER_COUPON |o--o{ ORDERS : applied_to
+
     RIDER |o--o{ ORDERS : delivers
+
+    ORDERS ||--|{ ORDER_ITEM : contains
+    PRODUCT ||--o{ ORDER_ITEM : references
+
     ADMIN_ACCOUNT {
         BIGINT id PK
         VARCHAR username UK
@@ -64,10 +70,12 @@ erDiagram
 10. 一个收货地址可以被多个订单使用；订单的地址关联可空，地址删除后清空关联，订单保留收货信息快照。
 11. 一个订单至少包含一条订单明细，每条订单明细只属于一个订单。
 12. 一个商品可以出现在多条订单明细中，每条订单明细对应一个商品。
-13. 商品详情图按排序展示，接口最多 3 张；删除商品时级联删除详情图。
-14. 店铺发行多种券，用户每种券只领取一次。用户券与历史订单不是一对一：取消返券后可以再次下单，旧订单保留关联，重复取消旧订单不得返还新订单占用的券。
-15. 订单最多关联一个用户券和一个骑手，均可空。接单原子绑定骑手；接单不改变制作中状态。
-16. 管理员使用独立账号表，没有业务外键，不开放自助注册。
+13. 一个商品可以拥有多张有序详情图（接口最多 3 张）；删除商品时级联删除详情图。
+14. 一个店铺可以发布多张优惠券，每张优惠券只属于一个店铺。
+15. 用户与优惠券通过用户优惠券实体关联；同一用户对同一优惠券最多有一条领取记录。
+16. 一笔订单最多关联一条用户优惠券记录；返券后再次使用时，同一记录可被多笔历史订单引用。
+17. 一笔订单最多归属一个骑手；一个骑手可以配送多笔订单，未领取订单的 `rider_id` 为空。
+18. 管理员账号没有外键关系，通过受控启动配置独立初始化。
 
 ## 4. 设计约束
 
@@ -83,6 +91,10 @@ erDiagram
 10. 店铺营业状态需要支持营业、休息和临时闭店。
 11. 密码字段只保存加密后的密码，不保存明文密码。
 12. 数据库结构变更必须通过版本化 SQL 完成，不能只手工修改本地数据库。
+13. 订单总金额等于商品总金额减优惠金额再加配送费；订单保存优惠金额快照。
+14. 取消待处理订单时必须在同一事务内恢复库存并返还优惠券，优惠券到期时间不变。
+15. 骑手领取制作中订单后只绑定归属，状态仍为制作中，再流转到配送中和已完成。
+16. 管理员账号不提供公开注册入口，密码只保存 BCrypt 摘要。
 
 ## 5. 状态字段
 
@@ -112,6 +124,14 @@ erDiagram
 | 4 | 已完成 |
 | 5 | 已取消 |
 
+### 优惠券与骑手状态
+
+| 实体 | 状态值 | 含义 |
+| --- | --- | --- |
+| coupon.enabled | 0 / 1 | 停用 / 启用 |
+| user_coupon.status | 0 / 1 | 未使用 / 已使用 |
+| rider.status | 0 / 1 | 禁用 / 正常 |
+
 ## 6. 补充约束
 
 1. 商家与店铺采用一对多关系，一个商家可以拥有多个店铺。
@@ -124,5 +144,9 @@ erDiagram
 8. 历史订单关联的数据不进行物理删除，收货地址是已确认的例外：允许删除，沿用 `ON DELETE SET NULL` 清空订单地址关联，订单快照不变。
 9. 数据库主键统一使用 BIGINT 自增整数。
 10. 表名和字段名统一采用小写 snake_case 命名。
-11. 订单总金额 = 商品金额 − 实际优惠 + 配送费；优惠不抵配送费。下单核销、扣库存、保存订单和清购物车同事务，首次取消恢复库存并返券。
-12. `user_coupon.status` 只保存 0 未使用 / 1 已使用；过期、停用和是否达到门槛由券模板及当前时间计算，不另存展示状态。删除用户券时订单关联置空，优惠金额快照不变；当前没有删除用户券的公开接口。
+11. 商品详情图片按 `sort_order` 排序，并通过 `product_id` 关联商品。
+12. `orders.address_id`、`orders.user_coupon_id` 删除时置空；`product_detail_image.product_id` 删除时级联；其他外键不级联删除。
+13. 优惠券领取唯一性由 `(user_id, coupon_id)` 唯一索引保证。
+14. 订单按 `rider_id` 与 `order_status` 建立联合索引，以支持骑手任务查询。
+15. `user_coupon.status` 仅保存未使用/已使用；过期、停用和是否满足门槛由券模板及当前时间计算。重复取消旧订单不能再次返券或恢复库存。
+16. 删除用户券时订单关联置空，优惠金额快照不变；当前无删除用户券的公开接口。
