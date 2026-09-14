@@ -2,13 +2,13 @@
 
 ## 1. 基本信息
 
-* 数据库：MySQL 8.4；下列字段对应已实现的 V1/V2，扩展字段随版本化迁移更新
+* 数据库：MySQL 8.4；下列字段对应 V1—V7，共 14 张表
 * 字符集：utf8mb4
 * 存储引擎：InnoDB
 * 主键：BIGINT 自增
 * 金额：DECIMAL(10,2)
 * 状态：TINYINT
-* 创建时间：TIMESTAMP
+* 创建时间：TIMESTAMP（管理员表为 DATETIME）
 * 修改时间：DATETIME
 
 ## 2. users 用户表
@@ -124,10 +124,13 @@
 | user_id          | BIGINT                 | FK、NN     | 下单用户编号     |
 | shop_id          | BIGINT                 | FK、NN     | 所属店铺编号     |
 | address_id       | BIGINT                 | FK、可空     | 下单时选择的地址编号 |
+| rider_id         | BIGINT                 | FK、可空     | V6：所属骑手，接单前为空 |
+| user_coupon_id   | BIGINT                 | FK、可空     | V7：用户券关联，删除券时 SET NULL |
 | receiver_name    | VARCHAR(50)            | NN        | 收货人姓名快照    |
 | receiver_phone   | VARCHAR(20)            | NN        | 收货人电话快照    |
 | delivery_address | VARCHAR(255)           | NN        | 收货地址快照     |
 | product_amount   | DECIMAL(10,2) UNSIGNED | NN、默认0.00 | 商品总金额      |
+| discount_amount  | DECIMAL(10,2) UNSIGNED | NN、默认0.00 | V7：实际优惠快照，旧订单为零 |
 | delivery_fee     | DECIMAL(10,2) UNSIGNED | NN、默认0.00 | 配送费        |
 | total_amount     | DECIMAL(10,2) UNSIGNED | NN、默认0.00 | 订单总金额      |
 | order_status     | TINYINT                | NN、默认0    | 订单状态       |
@@ -167,12 +170,14 @@
 3. 一个订单只能包含同一家店铺的商品。
 4. 订单必须至少包含一条订单明细。
 5. 商品小计等于商品单价乘以购买数量。
-6. 订单总金额等于商品总金额加配送费。
+6. 订单总金额等于商品总金额减实际优惠加配送费；起送价和券门槛按优惠前商品金额判断，优惠不抵配送费。
 7. 下单数量不能超过商品库存。
 8. 订单保存商品和地址快照，避免源数据修改后影响历史订单。
 9. 同店铺商品可同名，分类名保持唯一，沿用 `uk_category_shop_name`；Service 将创建或修改时的唯一键冲突转换为 409，包括并发重名。
 10. 分类、商品创建时默认状态为 1；分类停用和商品下架均修改状态，不提供物理删除接口。库存为 0 可以保持上架。
 11. 下单时校验店铺营业、商品上架、实时库存和起送价；库存条件扣减、订单及明细写入、选中购物车项清理处于同一事务，失败全部回滚。商品金额及订单总金额不得超过现有 `DECIMAL(10,2)` 上限，不扩展字段精度。
+12. 用券核销加入下单事务；首次取消在同一事务恢复库存和返券，重复取消不重复恢复。已取消订单仍保留用户券关联，不能给 `orders.user_coupon_id` 加唯一约束。
+13. 接单原子绑定 `rider_id`；只有所属骑手可以配送和送达。状态流转为 0→1→2→3→4，顾客只能 0→5。
 
 ## 12. 缩写说明
 
@@ -183,3 +188,71 @@
 | AI | 自动递增  |
 | NN | 不允许为空 |
 | UQ | 唯一约束  |
+
+## 13. product_detail_image 商品详情图（V3）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK、AI、NN | 图片编号 |
+| product_id | BIGINT | FK、NN | 商品，ON DELETE CASCADE |
+| image_url | VARCHAR(255) | NN | HTTP(S) 或本站 /images/ 路径 |
+| sort_order | INT UNSIGNED | NN、默认0 | 图片排序 |
+
+索引：`idx_product_detail_image_product_id`。最多 3 张是 Service 约束，不是数据库行数约束。
+
+## 14. admin_account 管理员（V4）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK、AI、NN | 管理员编号 |
+| username | VARCHAR(50) | UQ、NN | 登录名，uk_admin_account_username |
+| password_hash | VARCHAR(100) | NN | BCrypt 摘要 |
+| status | TINYINT | NN、默认1 | 0禁用，1启用 |
+| created_at | DATETIME | NN、默认CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | 可空 | 修改时间 |
+
+独立账号，无业务外键，通过环境变量受控初始化。
+
+## 15. coupon 店铺券（V5）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK、AI、NN | 券编号 |
+| shop_id | BIGINT | FK、NN | 所属店铺 |
+| name | VARCHAR(255) | NN | 券名称 |
+| threshold_amount | DECIMAL(10,2) UNSIGNED | NN | 商品金额门槛（元） |
+| discount_amount | DECIMAL(10,2) UNSIGNED | NN | 面额（元） |
+| starts_at | DATETIME | NN | 生效时间，含边界 |
+| expires_at | DATETIME | NN | 失效时间，不含边界 |
+| enabled | TINYINT | NN、默认1 | 0停用，1启用 |
+| created_at | TIMESTAMP | NN、默认CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | 可空 | 修改时间 |
+
+索引：`idx_coupon_shop_id`、`idx_coupon_shop_enabled_time(shop_id, enabled, starts_at, expires_at)`。金额和有效期发行后不可修改。
+
+## 16. user_coupon 用户券（V5）
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK、AI、NN | 领券记录编号 |
+| user_id | BIGINT | FK、NN | 所属用户 |
+| coupon_id | BIGINT | FK、NN | 券模板 |
+| status | TINYINT | NN、默认0 | 0未使用，1已使用 |
+| created_at | TIMESTAMP | NN、默认CURRENT_TIMESTAMP | 领取时间 |
+| updated_at | DATETIME | 可空 | 修改时间 |
+
+唯一键 `(user_id, coupon_id)` 保证每人每种券只领一次；索引 `(user_id, status)` 和 `coupon_id`。过期、停用是计算出的展示状态；返券只改使用状态，不延长有效期。
+
+## 17. rider 骑手（V6）及订单扩展索引
+
+| 字段 | 类型 | 约束 | 说明 |
+| --- | --- | --- | --- |
+| id | BIGINT | PK、AI、NN | 骑手编号 |
+| username | VARCHAR(50) | UQ、NN | 登录名 |
+| password_hash | VARCHAR(100) | NN | BCrypt 摘要 |
+| display_name | VARCHAR(50) | NN | 显示名 |
+| status | TINYINT | NN、默认1 | 0禁用，1启用 |
+| created_at | TIMESTAMP | NN、默认CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | 可空 | 修改时间 |
+
+订单新增 `idx_orders_rider_status(rider_id, order_status)`（V6）和 `idx_orders_user_coupon_id(user_coupon_id)`（V7）。全部迁移必须按数字版本顺序应用，不能修改已应用的迁移。数据库一致性检查见 [演示指南](../demo.md)。
