@@ -23,7 +23,11 @@
         </div>
       </div>
     </header>
-    <main class="food-main"><router-view /></main>
+    <main class="food-main">
+      <router-view v-slot="{ Component }">
+        <KeepAlive :key="sessionKey" include="CheckoutView"><component :is="Component" /></KeepAlive>
+      </router-view>
+    </main>
     <footer class="food-footer"><span>校园外卖课程演示</span><router-link v-if="!hasToken" to="/merchant/login">商家入驻</router-link></footer>
     <nav v-if="!isMerchant" class="mobile-nav" aria-label="手机导航">
       <router-link to="/home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3Z M9 20v-7h6v7"/></svg><span>首页</span></router-link>
@@ -43,6 +47,7 @@ const route = useRoute()
 const router = useRouter()
 const accountMenu = ref(null)
 const hasToken = computed(() => { route.fullPath; return Boolean(getToken()) })
+const sessionKey = computed(() => { route.fullPath; return getToken() || 'guest' })
 const isMerchant = computed(() => { route.fullPath; return hasToken.value && getAccountType() === 'MERCHANT' })
 watch(() => route.fullPath, () => { if (accountMenu.value) accountMenu.value.open = false })
 function handleLogout() {
