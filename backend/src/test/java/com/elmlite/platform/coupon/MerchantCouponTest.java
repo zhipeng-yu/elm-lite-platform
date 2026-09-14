@@ -9,6 +9,8 @@ import com.elmlite.platform.mapper.ShopMapper;
 import com.elmlite.platform.service.JwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
@@ -281,6 +283,17 @@ class MerchantCouponTest {
                   "expiresAt": "2026-09-30T00:00:00"
                 }
                 """;
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = JwtTokenService.AccountType.class, names = {"USER", "RIDER", "ADMIN"})
+    void otherRolesCannotDisableCouponOfMerchantWithSameId(JwtTokenService.AccountType type) throws Exception {
+        Coupon coupon = newCoupon(ownerShop.getId(), 1);
+        mockMvc.perform(patch("/api/v1/merchant/coupons/" + coupon.getId())
+                        .header("Authorization", "Bearer " + jwtTokenService.issue(ownerShop.getMerchantId(), type))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}"))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(403));
+        assertEquals(1, couponMapper.selectById(coupon.getId()).getEnabled());
     }
 
     private Merchant newMerchant(String account) {
