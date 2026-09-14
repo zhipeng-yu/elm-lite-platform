@@ -51,7 +51,7 @@ class PublicProductTest {
                 .andExpect(jsonPath("$.data[0].productName")
                         .value("Beef Rice"))
                 .andExpect(jsonPath("$.data[0].priceCent").value(1800))
-                .andExpect(jsonPath("$.data[0].stock").value(100))
+                .andExpect(jsonPath("$.data[0].stock").value(93))
                 .andExpect(jsonPath("$.data[0].status").value(1))
                 .andExpect(jsonPath("$.data[0].categoryName")
                         .doesNotExist())
@@ -89,7 +89,7 @@ class PublicProductTest {
                 .andExpect(jsonPath("$.data.productName")
                         .value("Beef Rice"))
                 .andExpect(jsonPath("$.data.priceCent").value(1800))
-                .andExpect(jsonPath("$.data.stock").value(100))
+                .andExpect(jsonPath("$.data.stock").value(93))
                 .andExpect(jsonPath("$.data.status").value(1))
                 .andExpect(jsonPath(
                         "$.data.detailImageUrls.length()")

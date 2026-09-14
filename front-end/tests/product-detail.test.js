@@ -15,6 +15,7 @@ const scriptSource = vueSource
 function createPage(productResponse, options = {}) {
   const added = []
   const messages = []
+  let fetches = 0
 
   const context = vm.createContext({
     ref: (value) => ({ value }),
@@ -28,7 +29,12 @@ function createPage(productResponse, options = {}) {
       success: (message) => messages.push({ type: 'success', message }),
       error: (message) => messages.push({ type: 'error', message })
     },
-    fetchProduct: async () => productResponse,
+    fetchProduct: async () => {
+      fetches++
+      return options.fetchProduct
+        ? options.fetchProduct(fetches)
+        : productResponse
+    },
     addCartItem: async (productId, quantity) => {
       added.push({ productId, quantity })
       if (options.addError) throw options.addError
@@ -47,7 +53,8 @@ function createPage(productResponse, options = {}) {
   return {
     page: context.page,
     added,
-    messages
+    messages,
+    fetches: () => fetches
   }
 }
 
@@ -142,6 +149,29 @@ test('售罄商品即使触发加购方法也不会请求购物车接口', async
 
   assert.equal(added.length, 0)
   assert.equal(page.adding.value, false)
+})
+
+test('库存冲突后刷新商品可用库存，避免继续展示旧数量', async () => {
+  const { page, fetches } = createPage(null, {
+    fetchProduct: (count) => ({
+      id: 15,
+      stock: count === 1 ? 25 : 10,
+      imageUrl: '',
+      detailImageUrls: []
+    }),
+    addError: {
+      response: {
+        status: 409,
+        data: { msg: '库存不足' }
+      }
+    }
+  })
+
+  await page.load()
+  await page.handleAddToCart()
+
+  assert.equal(fetches(), 2)
+  assert.equal(page.product.value.stock, 10)
 })
 
 test('商品详情模板包含大图、缩略图和底部购买栏', () => {

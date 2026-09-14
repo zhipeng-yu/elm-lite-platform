@@ -214,11 +214,19 @@ async function handleAddToCart() {
   try {
     await addCartItem(product.value.id, quantity.value)
     ElMessage.success('已加入购物车')
+    await load()
   } catch (error) {
     ElMessage.error(
       error.response?.data?.msg ||
       '加入购物车失败，请稍后重试'
     )
+
+    if (
+      error.response?.status === 409 &&
+      error.response?.data?.msg === '库存不足'
+    ) {
+      await load()
+    }
   } finally {
     adding.value = false
   }

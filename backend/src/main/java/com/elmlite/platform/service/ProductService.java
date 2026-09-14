@@ -5,6 +5,7 @@ import com.elmlite.platform.entity.Product;
 import com.elmlite.platform.entity.ProductCategory;
 import com.elmlite.platform.entity.ProductDetailImage;
 import com.elmlite.platform.exception.BusinessException;
+import com.elmlite.platform.mapper.CartItemMapper;
 import com.elmlite.platform.mapper.ProductCategoryMapper;
 import com.elmlite.platform.mapper.ProductDetailImageMapper;
 import com.elmlite.platform.mapper.ProductMapper;
@@ -20,16 +21,19 @@ public class ProductService {
     private final ProductMapper productMapper;
     private final ProductCategoryMapper productCategoryMapper;
     private final ProductDetailImageMapper productDetailImageMapper;
+    private final CartItemMapper cartItemMapper;
 
     @Autowired
     public ProductService(
             ProductMapper productMapper,
             ProductCategoryMapper productCategoryMapper,
-            ProductDetailImageMapper productDetailImageMapper) {
+            ProductDetailImageMapper productDetailImageMapper,
+            CartItemMapper cartItemMapper) {
 
         this.productMapper = productMapper;
         this.productCategoryMapper = productCategoryMapper;
         this.productDetailImageMapper = productDetailImageMapper;
+        this.cartItemMapper = cartItemMapper;
     }
 
     public ProductService(
@@ -39,6 +43,7 @@ public class ProductService {
         this.productMapper = productMapper;
         this.productCategoryMapper = productCategoryMapper;
         this.productDetailImageMapper = null;
+        this.cartItemMapper = null;
     }
 
     public List<CategoryResponse> listCategories(long shopId) {
@@ -68,7 +73,9 @@ public class ProductService {
 
         return productMapper.selectList(query)
                 .stream()
-                .map(ProductListResponse::from)
+                .map(product -> ProductListResponse.from(
+                        product,
+                        availableStock(product)))
                 .toList();
     }
 
@@ -106,7 +113,15 @@ public class ProductService {
         return ProductDetailResponse.from(
                 product,
                 category,
-                detailImageUrls);
+                detailImageUrls,
+                availableStock(product));
+    }
+
+    private int availableStock(Product product) {
+        long reserved = cartItemMapper == null
+                ? 0
+                : cartItemMapper.sumQuantityByProductId(product.getId());
+        return (int) Math.max(0L, (long) product.getStock() - reserved);
     }
 
     public record CategoryResponse(
@@ -134,7 +149,9 @@ public class ProductService {
             Integer stock,
             Integer status) {
 
-        static ProductListResponse from(Product product) {
+        static ProductListResponse from(
+                Product product,
+                int availableStock) {
             return new ProductListResponse(
                     product.getId(),
                     product.getCategoryId(),
@@ -144,7 +161,7 @@ public class ProductService {
                     product.getPrice()
                             .movePointRight(2)
                             .longValueExact(),
-                    product.getStock(),
+                    availableStock,
                     product.getStatus());
         }
     }
@@ -165,7 +182,8 @@ public class ProductService {
         static ProductDetailResponse from(
                 Product product,
                 ProductCategory category,
-                List<String> detailImageUrls) {
+                List<String> detailImageUrls,
+                int availableStock) {
 
             return new ProductDetailResponse(
                     product.getId(),
@@ -179,7 +197,7 @@ public class ProductService {
                     product.getPrice()
                             .movePointRight(2)
                             .longValueExact(),
-                    product.getStock(),
+                    availableStock,
                     product.getStatus());
         }
     }

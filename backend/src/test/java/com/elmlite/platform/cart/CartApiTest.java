@@ -182,6 +182,49 @@ class CartApiTest {
     }
 
     @Test
+    void cartReservationsAcrossUsersCannotExceedStock() throws Exception {
+        mvc.perform(post(URL)
+                        .header("Authorization", user(2))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"productId":1,"quantity":8}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.quantity").value(8));
+
+        mvc.perform(post(URL)
+                        .header("Authorization", user(2))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"productId":1,"quantity":1}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409));
+
+        assertEquals(8, jdbc.queryForObject(
+                "SELECT quantity FROM cart_item WHERE user_id=2 AND product_id=1",
+                Integer.class));
+    }
+
+    @Test
+    void updateRespectsStockReservedByOtherUsers() throws Exception {
+        jdbc.update("INSERT INTO cart_item(user_id,product_id,quantity) VALUES(2,1,7)");
+
+        mvc.perform(patch(URL + "/1")
+                        .header("Authorization", user(1))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"quantity":4}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(409));
+
+        assertEquals(2, jdbc.queryForObject(
+                "SELECT quantity FROM cart_item WHERE id=1",
+                Integer.class));
+    }
+
+    @Test
     void rejectsFractionalQuantity() throws Exception {
         mvc.perform(post(URL)
                         .header("Authorization", user(1))
