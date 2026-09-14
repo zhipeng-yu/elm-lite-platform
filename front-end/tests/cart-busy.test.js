@@ -25,3 +25,19 @@ test('数量更新未完成时不重复更新或删除，完成后重新拉取�
   assert.equal(page.cartItems.value[0].quantity, 2)
   assert.equal(page.busy.value, false)
 })
+
+test('删除响应丢失时重新拉取购物车，避免显示已经删除的商品', async () => {
+  const source = await readFile(new URL('../src/views/cart/CartView.vue', import.meta.url), 'utf8')
+  const script = source.match(/<script setup>([\s\S]*?)<\/script>/)[1].replace(/^import.*$/gm, '')
+  let loads = 0
+  const context = vm.createContext({
+    computed, ref, onMounted() {}, useRouter: () => ({}), ElMessage: {success() {}, error() {}},
+    updateCartItem: async () => {}, removeCartItem: async () => { throw new Error('连接中断') },
+    fetchCartItems: async () => { loads++; return [] }
+  })
+  vm.runInContext(script + '\nthis.page = {handleRemove, cartItems}', context)
+  context.page.cartItems.value = [{id: 1, quantity: 1}]
+  await context.page.handleRemove(context.page.cartItems.value[0])
+  assert.equal(loads, 1)
+  assert.deepEqual(context.page.cartItems.value, [])
+})

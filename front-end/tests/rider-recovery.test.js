@@ -35,3 +35,18 @@ test('骑手接单后打开配送信息，重复点击不重复接单，取消�
   assert.equal(completes, 0)
   assert.equal(page.acting.value, false)
 })
+
+test('骑手切换任务列表失败时不保留上一个标签的旧订单', async () => {
+  const source = await readFile(new URL('../src/views/rider/RiderTaskView.vue', import.meta.url), 'utf8')
+  const script = source.match(/<script setup>([\s\S]*?)<\/script>/)[1].replace(/^import.*$/gm, '')
+  const context = vm.createContext({
+    ref, onMounted() {}, useRouter: () => ({}), fetchShop: async () => ({}),
+    ElMessage: {success() {}, error() {}}, ElMessageBox: {confirm: async () => true},
+    api: {listAvailableOrders: async () => { throw new Error('连接中断') }}
+  })
+  vm.runInContext(script + '\nthis.page = {load, orders, error}', context)
+  context.page.orders.value = [{id: 1}]
+  await context.page.load()
+  assert.deepEqual(context.page.orders.value, [])
+  assert.equal(context.page.error.value, '加载失败')
+})
