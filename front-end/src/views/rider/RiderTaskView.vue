@@ -51,7 +51,7 @@ async function load() {
   if (loading.value) return
   loading.value = true; error.value = ''
   try { orders.value = await (tab.value === 'available' ? api.listAvailableOrders() : api.listRiderOrders()) }
-  catch (e) { error.value = e.response?.data?.msg || '加载失败' }
+  catch (e) { orders.value = []; error.value = e.response?.data?.msg || '加载失败' }
   finally { loading.value = false }
 }
 async function showDetail(id) {

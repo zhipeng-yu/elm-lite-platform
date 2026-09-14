@@ -47,6 +47,6 @@ test('骑手切换任务列表失败时不保留上一个标签的旧订单', as
   vm.runInContext(script + '\nthis.page = {load, orders, error}', context)
   context.page.orders.value = [{id: 1}]
   await context.page.load()
-  assert.deepEqual(context.page.orders.value, [])
+  assert.equal(context.page.orders.value.length, 0)
   assert.equal(context.page.error.value, '加载失败')
 })

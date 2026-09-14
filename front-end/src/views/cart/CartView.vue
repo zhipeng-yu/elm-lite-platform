@@ -110,7 +110,8 @@ async function handleRemove(item) {
     ElMessage.success('已从购物车移除')
     await load()
   } catch (error) {
-    ElMessage.error(error.response?.data?.msg || '删除失败，请稍后重试')
+    ElMessage.error(error.response?.data?.msg || '删除结果未确认，已刷新购物车')
+    await load()
   } finally { busy.value = false }
 }
 
