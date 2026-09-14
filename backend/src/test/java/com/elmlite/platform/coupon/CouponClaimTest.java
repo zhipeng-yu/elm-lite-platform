@@ -9,6 +9,8 @@ import com.elmlite.platform.mapper.ShopMapper;
 import com.elmlite.platform.service.JwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
@@ -124,6 +126,16 @@ class CouponClaimTest {
                         Integer.class,
                         1L,
                         coupon.getId()));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = JwtTokenService.AccountType.class, names = {"MERCHANT", "RIDER", "ADMIN"})
+    void otherRolesCannotClaimForUserWithSameId(JwtTokenService.AccountType type) throws Exception {
+        Coupon coupon = newCoupon(1, LocalDateTime.now().minusHours(1), LocalDateTime.now().plusDays(1));
+        mockMvc.perform(post("/api/v1/coupons/" + coupon.getId() + "/claims")
+                        .header("Authorization", "Bearer " + jwtTokenService.issue(1L, type)))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(403));
+        assertEquals(0, claimCount(coupon.getId()));
     }
 
     @Test

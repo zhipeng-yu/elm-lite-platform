@@ -12,7 +12,9 @@ $children = @()
 
 foreach ($port in @(13317, 18081, 5180)) {
     $probe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $port)
-    try { $probe.Start() } finally { $probe.Stop() }
+    try { $probe.Start() }
+    catch { throw "Port $port is already in use. For an existing demo, press Enter in its startup terminal to stop it; otherwise identify the process before retrying." }
+    finally { $probe.Stop() }
 }
 $legacyDir = Join-Path $repo 'backend/target/local-demo'
 if (Test-Path -LiteralPath $legacyDir) {

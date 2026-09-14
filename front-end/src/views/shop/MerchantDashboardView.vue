@@ -44,7 +44,7 @@
             <label>商品名称<input v-model.trim="form.productName" required maxlength="100"></label>
             <label>所属分类<select v-model.number="form.categoryId" required><option v-for="c in categories.filter(c => c.status === 1 || c.id === form.categoryId)" :key="c.id" :value="c.id" :disabled="c.status !== 1">{{ c.categoryName }}{{ c.status === 0 ? '（停用）' : '' }}</option></select></label>
             <label>商品描述<textarea v-model="form.description" maxlength="255"></textarea></label>
-            <label>封面图片地址<input v-model.trim="form.imageUrl" type="url" maxlength="255" placeholder="https://…（可选）"></label>
+            <label>封面图片地址<input v-model.trim="form.imageUrl" type="text" maxlength="255" placeholder="https://… 或 /images/…（可选）"></label>
             <p class="muted">详情图最多 3 张，支持 HTTP(S) 地址或本站 /images/ 路径。</p>
             <label>详情图 1<input v-model.trim="form.detailImageUrls[0]" type="text" maxlength="255" placeholder="https://… 或 /images/…（可选）"></label>
             <label>详情图 2<input v-model.trim="form.detailImageUrls[1]" type="text" maxlength="255" placeholder="https://… 或 /images/…（可选）"></label>
