@@ -324,17 +324,21 @@ onMounted(() => {
 
 <style scoped>
 .admin-console {
-  max-width: 1080px;
+  max-width: 1200px;
   margin: auto;
-  padding: 20px 24px 40px;
+  padding: 28px 24px 48px;
 }
 
 .console-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
+
+.console-header h2 { font-size: 28px; }
+.admin-console :deep(.el-tabs__content) { min-height: 360px; padding: 20px; border: 1px solid var(--line); border-radius: 0 var(--radius-card) var(--radius-card); background: white; }
+.admin-console :deep(.el-tabs__header) { margin-bottom: 0; }
 
 .toolbar {
   display: flex;
@@ -357,5 +361,14 @@ onMounted(() => {
 
 .amount {
   text-align: right;
+}
+
+@media (max-width: 600px) {
+  .admin-console { padding: 20px 16px 36px; }
+  .console-header h2 { font-size: 24px; }
+  .admin-console :deep(.el-tabs__nav-scroll) { overflow-x: auto; }
+  .admin-console :deep(.el-tabs__content) { padding: 14px; }
+  .keyword, .status, .toolbar :deep(.el-button) { width: 100%; max-width: none; }
+  .admin-console :deep(.el-table) { font-size: 14px; }
 }
 </style>

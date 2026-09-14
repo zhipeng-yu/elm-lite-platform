@@ -11,7 +11,7 @@
 
     <div
       v-loading="loading"
-      class="content"
+      class="content surface-card"
     >
       <el-alert
         v-if="errorMsg"
@@ -37,7 +37,7 @@
 
       <template v-else-if="shop">
         <div class="shop-head">
-          <h2>{{ shop.shopName }}</h2>
+          <h1>{{ shop.shopName }}</h1>
 
           <el-tag
             :type="statusTag(
@@ -172,6 +172,8 @@ onMounted(load)
 
 <style scoped>
 .shop-detail {
+  max-width: 920px;
+  margin: auto;
   padding: 8px 0;
 }
 
@@ -191,17 +193,26 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
+.shop-head h1 { font-size: 28px; }
+
 .desc {
-  color: #909399;
-  margin-bottom: 16px;
+  color: var(--muted);
+  margin-bottom: 20px;
 }
 
 .actions {
-  margin-top: 16px;
+  margin-top: 20px;
   display: flex;
   gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .shop-detail { padding: 0; }
+  .content { border-radius: var(--radius-card); }
+  .shop-head h1 { font-size: 24px; }
+  .actions :deep(.el-button) { flex: 1; min-height: 44px; }
 }
 </style>

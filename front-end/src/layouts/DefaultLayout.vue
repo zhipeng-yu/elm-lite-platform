@@ -59,8 +59,8 @@ function handleLogout() {
 </script>
 
 <style scoped>
-.food-layout { min-height: 100%; background: #f5f5f5; }
-.food-header { background: #0097ff; color: white; }
+.food-layout { min-height: 100%; background: var(--page); }
+.food-header { background: var(--brand); color: white; box-shadow: 0 1px 0 rgba(15, 23, 42, .08); }
 .header-inner { max-width: 1200px; min-height: 72px; padding: 0 4px; margin: auto; display: flex; align-items: center; gap: 55px; }
 .food-header a { color: inherit; text-decoration: none; }
 .brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
@@ -68,18 +68,18 @@ function handleLogout() {
 .brand span { font-size: 11px; border: 1px solid #ffffff99; padding: 2px 5px; border-radius: 3px; }
 .desktop-nav { align-self: stretch; display: flex; }
 .desktop-nav a { display: flex; align-items: center; padding: 0 24px; font-size: 16px; }
-.desktop-nav a.router-link-active { background: #0089e8; font-weight: 700; }
-.desktop-nav a:hover { background: #008ce9; }
+.desktop-nav a.router-link-active { background: rgba(255, 255, 255, .14); font-weight: 700; }
+.desktop-nav a:hover { background: rgba(255, 255, 255, .1); }
 .account-nav { display: flex; align-items: center; gap: 23px; margin-left: auto; font-size: 14px; white-space: nowrap; }
 .account-menu { position: relative; }
 .account-menu summary { cursor: pointer; list-style: none; padding: 15px 0; }
 .account-menu summary::-webkit-details-marker { display: none; }
-.account-dropdown { position: absolute; top: 100%; right: 0; z-index: 20; min-width: 140px; border: 1px solid #eee; border-radius: 4px; box-shadow: 0 4px 16px #0001; background: white; color: #333; padding: 6px; }
-.account-dropdown a, .account-dropdown button { display: block; padding: 12px 14px; text-align: left; width: 100%; font: inherit; border: 0; background: white; color: #333; cursor: pointer; }
-.account-dropdown a:hover, .account-dropdown button:hover { background: #f0f8ff; color: #0089ed; }
+.account-dropdown { position: absolute; top: 100%; right: 0; z-index: 20; min-width: 150px; border: 1px solid var(--line); border-radius: var(--radius-control); box-shadow: var(--shadow-hover); background: white; color: var(--ink); padding: 6px; }
+.account-dropdown a, .account-dropdown button { display: block; padding: 12px 14px; text-align: left; width: 100%; font: inherit; border: 0; border-radius: 6px; background: white; color: var(--ink); cursor: pointer; }
+.account-dropdown a:hover, .account-dropdown button:hover { background: var(--brand-soft); color: var(--brand); }
 .food-main { max-width: 1200px; margin: auto; padding: 28px 0 0; min-height: calc(100vh - 150px); }
-.food-footer { max-width: 1200px; padding: 24px 0; margin: auto; display: flex; gap: 20px; justify-content: center; color: #aaa; font-size: 12px; }
-.food-footer a { color: #888; text-decoration: none; }
+.food-footer { max-width: 1200px; padding: 24px 0; margin: auto; display: flex; gap: 20px; justify-content: center; color: var(--muted); font-size: 12px; }
+.food-footer a { color: var(--muted); text-decoration: none; }
 .mobile-nav { display: none; }
 @media (max-width: 1260px) { .header-inner { padding: 0 24px; gap: 25px; } .food-main { padding: 24px 24px 0; } }
 @media (max-width: 800px) { .desktop-nav a { padding: 0 12px; } .brand b { font-size: 26px; } .brand span { display: none; } .account-nav { gap: 14px; } }
@@ -91,9 +91,9 @@ function handleLogout() {
   .account-nav { font-size: 12px; gap: 14px; }
   .food-main { padding: 16px 16px 0; min-height: calc(100vh - 170px); }
   .food-footer { padding: 25px 16px calc(90px + env(safe-area-inset-bottom)); }
-  .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: #fff; border-top: 1px solid #eee; padding-bottom: env(safe-area-inset-bottom); }
-  .mobile-nav a { flex: 1; display: grid; justify-items: center; gap: 4px; padding: 9px 0 8px; color: #888; text-decoration: none; font-size: 11px; }
+  .mobile-nav { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: #fff; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  .mobile-nav a { flex: 1; min-height: 58px; display: grid; justify-items: center; align-content: center; gap: 3px; padding: 6px 0; color: var(--muted); text-decoration: none; font-size: 12px; }
   .mobile-nav svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.7; fill: none; stroke-linejoin: round; stroke-linecap: round; }
-  .mobile-nav a.router-link-active { color: #0097ff; font-weight: 700; }
+  .mobile-nav a.router-link-active { color: var(--brand); font-weight: 700; }
 }
 </style>
