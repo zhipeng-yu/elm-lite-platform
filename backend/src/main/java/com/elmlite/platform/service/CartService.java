@@ -55,7 +55,7 @@ public class CartService {
 
         validateQuantity(quantity);
 
-        Product product = productMapper.selectById(productId);
+        Product product = productMapper.lockById(productId);
 
         if (product == null) {
             throw new BusinessException(
@@ -83,7 +83,10 @@ public class CartService {
             targetQuantity = existing.getQuantity() + quantity;
         }
 
-        validateStock(product, targetQuantity);
+        validateStock(
+                product,
+                targetQuantity,
+                existing == null ? 0 : existing.getQuantity());
 
         if (existing != null) {
             existing.setQuantity(targetQuantity);
@@ -115,7 +118,7 @@ public class CartService {
         CartItem item = requireOwned(userId, id);
 
         Product product =
-                productMapper.selectById(item.getProductId());
+                productMapper.lockById(item.getProductId());
 
         if (product == null) {
             throw new BusinessException(
@@ -124,7 +127,7 @@ public class CartService {
         }
 
         validateProductAvailable(product);
-        validateStock(product, quantity);
+        validateStock(product, quantity, item.getQuantity());
 
         item.setQuantity(quantity);
         cartItemMapper.updateById(item);
@@ -209,9 +212,13 @@ public class CartService {
 
     private void validateStock(
             Product product,
-            int quantity) {
+            int targetQuantity,
+            int currentQuantity) {
 
-        if (quantity > product.getStock()) {
+        long reserved = cartItemMapper.sumQuantityByProductId(product.getId());
+        long targetReserved = reserved - currentQuantity + targetQuantity;
+
+        if (targetReserved > product.getStock()) {
             throw new BusinessException(
                     HttpStatus.CONFLICT,
                     "库存不足");
