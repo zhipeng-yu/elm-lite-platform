@@ -161,17 +161,20 @@ public class MerchantCouponService {
                     HttpStatus.BAD_REQUEST,
                     "优惠券名称不能为空");
         }
+        if (name.trim().length() > 255) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "优惠券名称不能超过255个字符");
+        }
     }
 
     private void validateThreshold(
             Long thresholdCent) {
 
         if (thresholdCent == null
-                || thresholdCent < 0) {
+                || thresholdCent < 0 || thresholdCent > 9_999_999_999L) {
 
             throw new BusinessException(
                     HttpStatus.BAD_REQUEST,
-                    "优惠券门槛不能为负数");
+                    "优惠券门槛必须在0至9999999999分之间");
         }
     }
 
@@ -179,11 +182,11 @@ public class MerchantCouponService {
             Long discountCent) {
 
         if (discountCent == null
-                || discountCent <= 0) {
+                || discountCent <= 0 || discountCent > 9_999_999_999L) {
 
             throw new BusinessException(
                     HttpStatus.BAD_REQUEST,
-                    "优惠金额必须大于0");
+                    "优惠金额必须在1至9999999999分之间");
         }
     }
 

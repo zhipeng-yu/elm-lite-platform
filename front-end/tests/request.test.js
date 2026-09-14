@@ -11,6 +11,31 @@ const source = (await readFile(new URL('../src/api/request.js', import.meta.url)
   .replaceAll('import.meta.env', 'env')
   .replace('export default service', 'globalThis.service = service')
 
+test('旧请求延迟返回401不能清除刚切换的新身份会话', async () => {
+  let token = 'old-session'
+  let rejectOld
+  let started
+  const dispatched = new Promise(resolve => { started = resolve })
+  const pushes = []
+  const context = vm.createContext({
+    axios, env: { DEV: false }, ElMessage: { error() {} },
+    router: { currentRoute: { value: { path: '/rider', fullPath: '/rider' } }, push(value) { pushes.push(value) } },
+    getToken: () => token, removeToken() { token = null }, setTimeout
+  })
+  vm.runInContext(source, context)
+  const pending = context.service.get('/orders', { adapter: config => new Promise((resolve, reject) => {
+    rejectOld = () => reject({ config, response: { status: 401 } })
+    started()
+  }) })
+  await dispatched
+  token = 'new-rider-session'
+  const rejected = assert.rejects(pending)
+  rejectOld()
+  await rejected
+  assert.equal(token, 'new-rider-session')
+  assert.equal(pushes.length, 0)
+})
+
 test('商家会话过期返回商家登录页，登录失败留在当前表单', async () => {
   const pushes = []
   const route = { path: '/merchant', fullPath: '/merchant' }

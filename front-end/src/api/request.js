@@ -40,6 +40,8 @@ service.interceptors.response.use(
   (error) => {
     const status = error.response?.status
     if (status === 401) {
+      const currentToken = getToken()
+      if (currentToken && error.config?.headers?.Authorization !== `Bearer ${currentToken}`) return Promise.reject(error)
       // 未登录或 Token 过期：清除 Token，提示并跳转登录页
       removeToken()
       ElMessage.error(error.response?.data?.msg || '登录已过期，请重新登录')

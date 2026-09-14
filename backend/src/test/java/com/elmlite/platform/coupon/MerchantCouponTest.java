@@ -9,6 +9,9 @@ import com.elmlite.platform.mapper.ShopMapper;
 import com.elmlite.platform.service.JwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcPrint;
@@ -281,6 +284,43 @@ class MerchantCouponTest {
                   "expiresAt": "2026-09-30T00:00:00"
                 }
                 """;
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"name", "thresholdCent", "discountCent"})
+    void createRejectsValuesBeyondDatabaseLimits(String field) throws Exception {
+        String body = switch (field) {
+            case "name" -> validBody().replace("Lunch Discount", "券".repeat(256));
+            case "thresholdCent" -> validBody().replace("2000", "10000000000");
+            default -> validBody().replace("500", "10000000000");
+        };
+        mockMvc.perform(post("/api/v1/merchant/shops/" + ownerShop.getId() + "/coupons")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value(400));
+        assertEquals(0L, couponMapper.selectCount(null));
+    }
+
+    @Test
+    void createAcceptsExactDatabaseLimits() throws Exception {
+        mockMvc.perform(post("/api/v1/merchant/shops/" + ownerShop.getId() + "/coupons")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validBody().replace("Lunch Discount", "券".repeat(255))
+                                .replace("2000", "9999999999").replace("500", "9999999999")))
+                .andExpect(status().isCreated());
+        assertEquals(1L, couponMapper.selectCount(null));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = JwtTokenService.AccountType.class, names = {"USER", "RIDER", "ADMIN"})
+    void otherRolesCannotDisableCouponOfMerchantWithSameId(JwtTokenService.AccountType type) throws Exception {
+        Coupon coupon = newCoupon(ownerShop.getId(), 1);
+        mockMvc.perform(patch("/api/v1/merchant/coupons/" + coupon.getId())
+                        .header("Authorization", "Bearer " + jwtTokenService.issue(ownerShop.getMerchantId(), type))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}"))
+                .andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value(403));
+        assertEquals(1, couponMapper.selectById(coupon.getId()).getEnabled());
     }
 
     private Merchant newMerchant(String account) {

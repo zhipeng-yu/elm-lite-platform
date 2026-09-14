@@ -122,6 +122,45 @@ if os.environ.get('ADMIN_USERNAME') and os.environ.get('ADMIN_PASSWORD'):
 else:
     checks.append('管理员检查未运行：未提供初始化环境变量')
 
+# 对每个受保护入口检查匿名、错误 Token 和所有错误身份；使用不存在的资源 ID，
+# 仍必须先拒绝身份，不能由 Service 恰好查不到同 ID 账号来掩盖漏配规则。
+role_tokens = {'USER': user, 'MERCHANT': merchant, 'RIDER': rider}
+if 'admin' in globals():
+    role_tokens['ADMIN'] = admin
+protected = {
+    'USER': [('GET', '/users/me'), ('PATCH', '/users/me'),
+             ('GET', '/addresses'), ('POST', '/addresses'), ('GET', '/addresses/999999999'),
+             ('PATCH', '/addresses/999999999'), ('DELETE', '/addresses/999999999'),
+             ('GET', '/cart/items'), ('POST', '/cart/items'), ('PATCH', '/cart/items/999999999'),
+             ('DELETE', '/cart/items/999999999'), ('GET', '/orders'), ('POST', '/orders'),
+             ('GET', '/orders/999999999'), ('POST', '/orders/999999999/cancel'),
+             ('POST', '/coupons/999999999/claims'), ('GET', '/coupons/mine')],
+    'MERCHANT': [('GET', '/merchant/shops'), ('POST', '/merchant/shops'),
+                 ('PATCH', '/merchant/shops/999999999'),
+                 ('GET', '/merchant/shops/999999999/categories'), ('POST', '/merchant/shops/999999999/categories'),
+                 ('PATCH', '/merchant/categories/999999999'),
+                 ('GET', '/merchant/shops/999999999/products'), ('POST', '/merchant/shops/999999999/products'),
+                 ('PATCH', '/merchant/products/999999999'),
+                 ('GET', '/merchant/shops/999999999/orders'), ('GET', '/merchant/orders/999999999'),
+                 ('POST', '/merchant/orders/999999999/confirm'), ('POST', '/merchant/orders/999999999/prepare'),
+                 ('GET', '/merchant/shops/999999999/coupons'), ('POST', '/merchant/shops/999999999/coupons'),
+                 ('PATCH', '/merchant/coupons/999999999')],
+    'RIDER': [('GET', '/rider/available-orders'), ('GET', '/rider/orders'), ('GET', '/rider/orders/999999999'),
+              ('POST', '/rider/orders/999999999/claim'), ('POST', '/rider/orders/999999999/dispatch'),
+              ('POST', '/rider/orders/999999999/complete')],
+    'ADMIN': [('GET', '/admin/users'), ('GET', '/admin/merchants'), ('GET', '/admin/shops'),
+              ('GET', '/admin/orders'), ('GET', '/admin/orders/999999999'),
+              ('PATCH', '/admin/users/999999999'), ('PATCH', '/admin/merchants/999999999')]
+}
+denials = 0
+for owner, endpoints in protected.items():
+    for method, path in endpoints:
+        for token, expected in [(None, 401), ('invalid-token', 401)] + [
+                (token, 403) for role, token in role_tokens.items() if role != owner]:
+            call(method, path, {} if method in ('POST', 'PATCH') else None, token, expected)
+            denials += 1
+checks.append(f'{sum(map(len, protected.values()))} 个受保护入口、{denials} 次匿名/错误 Token/跨身份拒绝')
+
 # 重新补种子后，人工创建的这家店仍只有一件商品。
 subprocess.run([sys.executable, str(ROOT / 'scripts/seed-demo.py')], check=True)
 assert len(call('GET', f'/merchant/shops/{sid}/products', token=merchant)) == 1
