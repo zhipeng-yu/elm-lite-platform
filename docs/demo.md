@@ -61,7 +61,7 @@ Remove-Item Env:ADMIN_PASSWORD, Env:ADMIN_USERNAME
 
 ## 验收截图参考
 
-队友在 [PR #79](https://github.com/zhipeng-yu/elm-lite-platform/pull/79) 留存的页面参考：
+页面参考截图：
 
 - [手机首页](demo-screenshots/mobile-home.png)、[顾客订单](demo-screenshots/mobile-order-done.png)、[商家订单](demo-screenshots/mobile-merchant-orders.png)、[骑手任务](demo-screenshots/mobile-rider-tasks.png)。
 - [桌面首页](demo-screenshots/desktop-home.png)、[管理员订单](demo-screenshots/desktop-admin-orders.png)。
