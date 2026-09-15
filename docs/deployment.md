@@ -42,7 +42,8 @@ mysqld.exe --version
 ## 3. 获取仓库
 
 ```powershell
-git clone https://github.com/zhipeng-yu/elm-lite-platform.git
+# 将 OWNER 替换为登记仓库的所有者名称
+git clone https://github.com/OWNER/elm-lite-platform.git
 Set-Location .\elm-lite-platform
 git status --short
 ```
