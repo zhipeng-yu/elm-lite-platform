@@ -14,3 +14,7 @@ spring:
 security:
   jwt:
     secret: test-only-jwt-secret-at-least-32-bytes
+
+api:
+  monitor:
+    enabled: false

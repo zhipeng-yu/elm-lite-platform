@@ -16,8 +16,11 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class RiderOrderService {
  private final RiderMapper riders; private final OrderMapper orders; private final OrderItemMapper items; private final ShopMapper shops;
- public RiderOrderService(RiderMapper riders, OrderMapper orders, OrderItemMapper items, ShopMapper shops) {
+ private final UserMapper users; private final OrderPointsAwardService pointsAwards;
+ public RiderOrderService(RiderMapper riders, OrderMapper orders, OrderItemMapper items, ShopMapper shops,
+                          UserMapper users, OrderPointsAwardService pointsAwards) {
   this.riders=riders; this.orders=orders; this.items=items; this.shops=shops;
+  this.users=users; this.pointsAwards=pointsAwards;
  }
  public List<Available> available(long riderId) { active(riderId); return orders.selectList(Wrappers.<Order>lambdaQuery()
   .eq(Order::getOrderStatus,2).isNull(Order::getRiderId).orderByDesc(Order::getCreatedAt,Order::getId)).stream().map(this::available).toList(); }
@@ -31,7 +34,17 @@ public class RiderOrderService {
   o.setRiderId(riderId); return detail(o);
  }
  @Transactional public OrderService.Detail dispatch(long riderId,long id) { return change(riderId,id,2,3,false); }
- @Transactional public OrderService.Detail complete(long riderId,long id) { return change(riderId,id,3,4,true); }
+ @Transactional public OrderService.Detail complete(long riderId,long id) {
+  active(riderId);
+  Order snapshot=orders.selectById(id); requireOwned(riderId,snapshot);
+  if(users.lockById(snapshot.getUserId())==null) throw error(HttpStatus.NOT_FOUND,"用户不存在");
+  Order o=orders.lockById(id); requireOwned(riderId,o);
+  if(!snapshot.getUserId().equals(o.getUserId())) throw error(HttpStatus.CONFLICT,"订单归属已变化");
+  if(Integer.valueOf(4).equals(o.getOrderStatus())) return detail(o);
+  if(!Integer.valueOf(3).equals(o.getOrderStatus()) || orders.updateStatus(id,3,4)!=1)
+   throw error(HttpStatus.CONFLICT,"订单状态不允许此操作");
+  o.setOrderStatus(4); pointsAwards.awardCompletedOrder(o); return detail(o);
+ }
  private OrderService.Detail change(long riderId,long id,int expected,int next,boolean idempotent) {
   active(riderId); Order o=orders.lockById(id); requireOwned(riderId,o);
   if(idempotent && Integer.valueOf(next).equals(o.getOrderStatus())) return detail(o);
