@@ -44,11 +44,13 @@ public class OrderService {
     private final ProductMapper products;
     private final CheckoutService checkout;
     private final CouponService coupons;
+    private final PointsOrderService pointsOrders;
     private final Validator validator;
 
     public OrderService(OrderMapper orders, OrderItemMapper items, UserService users, UserMapper userMapper,
                         AddressService addresses, CartItemMapper carts, ShopMapper shops, MerchantMapper merchants,
-                        ProductMapper products, CheckoutService checkout, CouponService coupons, Validator validator) {
+                        ProductMapper products, CheckoutService checkout, CouponService coupons,
+                        PointsOrderService pointsOrders, Validator validator) {
         this.orders = orders;
         this.items = items;
         this.users = users;
@@ -60,6 +62,7 @@ public class OrderService {
         this.products = products;
         this.checkout = checkout;
         this.coupons = coupons;
+        this.pointsOrders = pointsOrders;
         this.validator = validator;
     }
 
@@ -120,7 +123,13 @@ public class OrderService {
             discountCent = coupons.consumeCoupon(userId, request.userCouponId(), shopId,
                     productAmount.movePointRight(2).longValueExact()).discountAmountCent();
         }
-        BigDecimal discount = BigDecimal.valueOf(discountCent, 2);
+        long pointsDiscountCent = request.pointsToUse() == null ? 0L : request.pointsToUse();
+        BigDecimal couponDiscount = BigDecimal.valueOf(discountCent, 2);
+        BigDecimal pointsDiscount = BigDecimal.valueOf(pointsDiscountCent, 2);
+        if (pointsDiscount.compareTo(productAmount.subtract(couponDiscount)) > 0) {
+            throw new BusinessException(HttpStatus.CONFLICT, "积分抵扣不能超过优惠后的商品金额");
+        }
+        BigDecimal discount = couponDiscount.add(pointsDiscount);
         BigDecimal total = productAmount.subtract(discount).add(shop.getDeliveryPrice());
         BigDecimal maximum = new BigDecimal("99999999.99");
         if (productAmount.compareTo(maximum) > 0 || total.compareTo(maximum) > 0) {
@@ -144,6 +153,9 @@ public class OrderService {
         order.setRemark(request.remark());
         order.setCreatedAt(LocalDateTime.now(ZoneOffset.ofHours(8)));
         orders.insert(order);
+        if (pointsDiscountCent > 0) {
+            pointsOrders.consumeForOrder(userId, order.getId(), pointsDiscountCent);
+        }
         for (OrderItem line : lines) {
             line.setOrderId(order.getId());
             items.insert(line);
@@ -193,6 +205,7 @@ public class OrderService {
             }
         }
         if (order.getUserCouponId() != null) coupons.returnCoupon(userId, order.getUserCouponId());
+        pointsOrders.returnForOrder(userId, id);
         if (orders.updateStatus(id, 0, 5) != 1) {
             throw new BusinessException(HttpStatus.CONFLICT, "订单状态已变化");
         }

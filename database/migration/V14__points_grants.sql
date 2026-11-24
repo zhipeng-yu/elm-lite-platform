@@ -1,0 +1,20 @@
+CREATE TABLE points_grant (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    source_type VARCHAR(16) NOT NULL,
+    event_key VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    basis_units BIGINT NOT NULL,
+    awarded_points BIGINT NOT NULL,
+    remaining_points BIGINT NOT NULL,
+    earned_on DATE NOT NULL,
+    expires_on DATE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_points_grant_event (user_id, source_type, event_key),
+    KEY idx_points_grant_expiry (user_id, expires_on, id),
+    CONSTRAINT fk_points_grant_user FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT chk_points_grant_basis CHECK (basis_units >= 0),
+    CONSTRAINT chk_points_grant_award CHECK (awarded_points >= 0),
+    CONSTRAINT chk_points_grant_remaining CHECK (remaining_points >= 0 AND remaining_points <= awarded_points),
+    CONSTRAINT chk_points_grant_dates CHECK (expires_on > earned_on)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分发放批次';

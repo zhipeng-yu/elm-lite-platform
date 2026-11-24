@@ -2,6 +2,7 @@ package com.elmlite.platform.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -15,17 +16,22 @@ public record OrderRequest(
         @NotNull(message = "请选择收货地址") @Positive(message = "地址ID必须为正整数") Long addressId,
         @NotEmpty(message = "请选择购物车商品") List<@NotNull @Positive Long> cartItemIds,
         @Size(max = 255, message = "备注不能超过255位") String remark,
-        @Positive(message = "优惠券ID必须为正整数") Long userCouponId) {
+        @Positive(message = "优惠券ID必须为正整数") Long userCouponId,
+        @Positive(message = "积分必须为正整数") @Max(value = 9_999_999_999L, message = "积分超出范围") Long pointsToUse) {
 
     public OrderRequest(Long addressId, List<Long> cartItemIds, String remark) {
-        this(addressId, cartItemIds, remark, null);
+        this(addressId, cartItemIds, remark, null, null);
+    }
+
+    public OrderRequest(Long addressId, List<Long> cartItemIds, String remark, Long userCouponId) {
+        this(addressId, cartItemIds, remark, userCouponId, null);
     }
 
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static OrderRequest from(JsonNode body) {
         if (!body.isObject()) throw new IllegalArgumentException("订单请求必须为对象");
         body.fieldNames().forEachRemaining(name -> {
-            if (!Set.of("addressId", "cartItemIds", "remark", "userCouponId").contains(name)) {
+            if (!Set.of("addressId", "cartItemIds", "remark", "userCouponId", "pointsToUse").contains(name)) {
                 throw new IllegalArgumentException("不支持的订单字段");
             }
         });
@@ -42,7 +48,7 @@ public record OrderRequest(
         }
         String text = remark == null || remark.isNull() ? null : remark.textValue().strip();
         return new OrderRequest(id(body.get("addressId")), ids, text == null || text.isEmpty() ? null : text,
-                id(body.get("userCouponId")));
+                id(body.get("userCouponId")), id(body.get("pointsToUse")));
     }
 
     private static Long id(JsonNode value) {
