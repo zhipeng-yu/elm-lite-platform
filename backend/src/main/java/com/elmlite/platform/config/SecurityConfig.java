@@ -67,6 +67,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/users/me").hasAuthority("USER")
                         .requestMatchers("/api/v1/addresses", "/api/v1/addresses/**").hasAuthority("USER")
                         .requestMatchers("/api/v1/cart/**", "/api/v1/orders", "/api/v1/orders/**").hasAuthority("USER")
+                        .requestMatchers("/api/v1/wallets", "/api/v1/wallets/**").hasAnyAuthority("USER", "MERCHANT")
                         .requestMatchers("/api/v1/admin/**").hasAuthority("ADMIN")
                         .requestMatchers("/api/v1/rider/**").hasAuthority("RIDER")
                         .requestMatchers("/api/v1/merchant/shops", "/api/v1/merchant/shops/**").hasAuthority("MERCHANT")
